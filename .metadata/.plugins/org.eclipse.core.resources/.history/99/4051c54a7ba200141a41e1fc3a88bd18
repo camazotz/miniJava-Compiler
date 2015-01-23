@@ -1,0 +1,43 @@
+package miniJava;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
+
+import miniJava.SyntacticAnalyzer.Parser;
+import miniJava.SyntacticAnalyzer.Scanner;
+
+public class Compiler {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		int rc = 1;
+		String fileToRead = "testFile.java";
+		FileInputStream someFile = null;
+		try {
+			someFile = new FileInputStream(fileToRead);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		InputStreamReader stream = new InputStreamReader(someFile);
+		BufferedReader scan = new BufferedReader(stream);
+		java.util.Scanner key = new java.util.Scanner(scan);
+		
+		Parser fileParse = new Parser(fileToRead);
+		Scanner fileScan = new Scanner();
+		
+		while (key.hasNext())
+		{
+			String token = key.next();
+			System.out.println(token);
+			fileParse.parseProgram(token);
+		}
+		
+		System.exit(rc);
+	}
+	
+	
+
+}

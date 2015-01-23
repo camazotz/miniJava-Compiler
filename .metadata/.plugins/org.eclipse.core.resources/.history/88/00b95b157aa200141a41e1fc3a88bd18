@@ -1,0 +1,46 @@
+package miniJava.SyntacticAnalyzer;
+
+public class Parser {
+
+	static void parseProgram(String currentToken)
+	{
+		if (currentToken.equals("class"))
+		{
+			parseId(currentToken);
+		}
+		parseClassDec(currentToken);
+	}
+	
+	static void parseId(String currentToken)
+	{
+		if (currentToken.equals("^[a-zA-Z0-9]*$"))
+		{
+			
+		}
+	}
+	
+	static void parseClassDec(String currentToken)
+	{
+		if (currentToken.equals("class"))
+		{
+			parseFieldDec(currentToken);
+			parseMethodDec(currentToken);
+		}
+		
+		else
+		{
+			System.out.println("ClassDecError");
+		}
+	}
+	
+	static void parseFieldDec(String currentToken)
+	{
+		
+	}
+	
+	static void parseMethodDec(String currentToken)
+	{
+		
+	}
+	
+}

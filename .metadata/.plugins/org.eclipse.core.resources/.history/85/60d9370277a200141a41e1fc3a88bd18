@@ -1,0 +1,59 @@
+package miniJava;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
+import java.util.Scanner;
+
+public class Compiler {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		FileInputStream someFile = null;
+		try {
+			someFile = new FileInputStream("testFile.java");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		InputStreamReader stream = new InputStreamReader(someFile);
+		BufferedReader scan = new BufferedReader(stream);
+		Scanner key = new Scanner(scan);
+		
+		while (key.hasNext())
+		{
+			System.out.println(key.next());
+		}
+	}
+	
+	static void parseProgram(String currentToken)
+	{
+		parseClassDec(currentToken);
+	}
+	
+	static void parseClassDec(String currentToken)
+	{
+		if (currentToken.equals("class"))
+		{
+			parseFieldDec(currentToken);
+			parseMethodDec(currentToken);
+		}
+		
+		else
+		{
+			System.out.println("ClassDecError");
+		}
+	}
+	
+	static void parseFieldDec(String currentToken)
+	{
+		
+	}
+	
+	static void parseMethodDec(String currentToken)
+	{
+		
+	}
+
+}
