@@ -43,23 +43,23 @@ import miniJava.ErrorReporter;
 			catch (SyntaxError e) { }
 		}
 
-		public static void parseProgram() throws SyntaxError
+		public void parseProgram() throws SyntaxError
 		{
-			
-		}
-		
-		public static void parseId(String currentToken)
-		{
-			if (currentToken.equals("^[a-zA-Z0-9]*$"))
+			if (token.equals("class"))
 			{
-				while (currentToken.equals("^[a-zA-Z0-9]*$"))
-				{
-					
-				}
+				parseId();
 			}
 		}
 		
-		static void parseClassDec(String currentToken)
+		public void parseId()
+		{
+			if (token.equals("^[a-zA-Z0-9]*$"))
+			{
+			
+			}
+		}
+		
+		void parseClassDec(String currentToken)
 		{
 			if (currentToken.equals("class"))
 			{
@@ -73,12 +73,12 @@ import miniJava.ErrorReporter;
 			}
 		}
 		
-		static void parseFieldDec(String currentToken)
+		void parseFieldDec(String currentToken)
 		{
 			
 		}
 		
-		static void parseMethodDec(String currentToken)
+		void parseMethodDec(String currentToken)
 		{
 			
 		}

@@ -1,0 +1,14 @@
+package miniJava.SyntacticAnalyzer;
+
+/**
+ *   TokenKind is a simple enumeration of the different kinds of tokens
+ *   
+ */
+
+public enum TokenKind {Id, NUM, classDec, binOp, unOp, subtract, 
+	publicDec, privateDec, staticDec, voidDec, 
+	returnDec, thisDec, leftBrace, rightBrace,
+	leftBracket, rightBracket, leftParenthesis, rightParenthesis,
+	blockCommentOpen, blockCommentClose, 
+	lineComment, semicolon, newKW, ifKW, elseKW, whileKW, EOT, ERROR}
+
