@@ -221,73 +221,93 @@ public class Scanner{
 			}
 		}
 		
-		else if (Character.toString(currentChar).equals("[0-9]"))
+		else if (Character.toString(currentChar).matches("[0-9]"))
 		{
-			while (Character.toString(currentChar).equals("[0-9]"))
+			while (Character.toString(currentChar).matches("[0-9]"))
 			{
 				takeIt();
 			}
 			return(TokenKind.NUM);
 		}
 		
-		else if (Character.toString(currentChar).equals("^[a-zA-Z0-9]"))
+		else if (Character.toString(currentChar).matches("^[a-zA-Z0-9]"))
 		{
-			while (Character.toString(currentChar).equals("^[a-zA-Z0-9]"))
+			while (Character.toString(currentChar).matches("^[a-zA-Z0-9]"))
 			{
 				takeIt();
 			}
 			
-			if (currentSpelling.equals("class"))
+			if (currentSpelling.toString().equals("class"))
 			{
 				return TokenKind.CLASS_KW;
 			}
 			
-			else if (currentSpelling.equals("return"))
+			else if (currentSpelling.toString().equals("public"))
+			{
+				return TokenKind.PUBLIC_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("private"))
+			{
+				return TokenKind.PRIVATE_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("static"))
+			{
+				return TokenKind.STATIC_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("void"))
+			{
+				return TokenKind.VOID_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("return"))
 			{
 				return TokenKind.RETURN_KW;
 			}
 			
-			else if (currentSpelling.equals("this"))
+			else if (currentSpelling.toString().equals("this"))
 			{
 				return TokenKind.THIS_KW;
 			}
 			
-			else if (currentSpelling.equals("if"))
+			else if (currentSpelling.toString().equals("if"))
 			{
 				return TokenKind.IF_KW;
 			}
 			
-			else if (currentSpelling.equals("else"))
+			else if (currentSpelling.toString().equals("else"))
 			{
 				return TokenKind.ELSE_KW;
 			}
 			
-			else if (currentSpelling.equals("while"))
+			else if (currentSpelling.toString().equals("while"))
 			{
 				return TokenKind.WHILE_KW;
 			}
 			
-			else if (currentSpelling.equals("new"))
+			else if (currentSpelling.toString().equals("new"))
 			{
 				return TokenKind.NEW_KW;
 			}
 			
-			else if (currentSpelling.equals("true"))
+			else if (currentSpelling.toString().equals("true"))
 			{
 				return TokenKind.TRUE_KW;
 			}
 			
-			else if (currentSpelling.equals("false"))
+			else if (currentSpelling.toString().equals("false"))
 			{
 				return TokenKind.FALSE_KW;
 			}
 			
-			else if (currentSpelling.equals("boolean"))
+			else if (currentSpelling.toString().equals("boolean"))
 			{
 				return TokenKind.BOOLEAN_KW;
 			}
 			
-			else if (currentSpelling.equals("int"))
+			else if (currentSpelling.toString().equals("int"))
 			{
 				return TokenKind.INT_KW;
 			}

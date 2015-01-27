@@ -1,5 +1,7 @@
 package miniJava.SyntacticAnalyzer;
 
+
+
 /**
  *  A token has a kind and a spelling
  *  In a full compiler it would also have a source position 
