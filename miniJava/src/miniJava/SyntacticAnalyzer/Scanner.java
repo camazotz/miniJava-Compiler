@@ -27,7 +27,7 @@ public class Scanner{
 	public Token scan() {
 
 		// skip whitespace
-		while (currentChar == ' ')
+		while (currentChar == ' ' || currentChar == '\t')
 			skipIt();
 
 		// collect spelling and identify token kind
@@ -45,6 +45,12 @@ public class Scanner{
 		{
 			takeIt();
 			return(TokenKind.LBRACE);
+		}
+		
+		else if (currentChar == '\n' || currentChar == '\r')
+		{
+			nextChar();
+			return(TokenKind.EOL);
 		}
 		
 		else if (currentChar == '}')
@@ -235,87 +241,85 @@ public class Scanner{
 			while (Character.toString(currentChar).matches("^[a-zA-Z0-9]"))
 			{
 				takeIt();
-			}
 			
-			if (currentSpelling.toString().equals("class"))
-			{
-				return TokenKind.CLASS_KW;
-			}
+				if (currentSpelling.toString().equals("class"))
+				{
+					return TokenKind.CLASS_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("public"))
+				{
+					return TokenKind.PUBLIC_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("private"))
+				{
+					return TokenKind.PRIVATE_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("static"))
+				{
+					return TokenKind.STATIC_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("void"))
+				{
+					return TokenKind.VOID_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("return"))
+				{
+					return TokenKind.RETURN_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("this"))
+				{
+					return TokenKind.THIS_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("if"))
+				{
+					return TokenKind.IF_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("else"))
+				{
+					return TokenKind.ELSE_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("while"))
+				{
+					return TokenKind.WHILE_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("new"))
+				{
+					return TokenKind.NEW_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("true"))
+				{
+					return TokenKind.TRUE_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("false"))
+				{
+					return TokenKind.FALSE_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("boolean"))
+				{
+					return TokenKind.BOOLEAN_KW;
+				}
+				
+				else if (currentSpelling.toString().equals("int"))
+				{
+					return TokenKind.INT_KW;
+				}
 			
-			else if (currentSpelling.toString().equals("public"))
-			{
-				return TokenKind.PUBLIC_KW;
 			}
-			
-			else if (currentSpelling.toString().equals("private"))
-			{
-				return TokenKind.PRIVATE_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("static"))
-			{
-				return TokenKind.STATIC_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("void"))
-			{
-				return TokenKind.VOID_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("return"))
-			{
-				return TokenKind.RETURN_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("this"))
-			{
-				return TokenKind.THIS_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("if"))
-			{
-				return TokenKind.IF_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("else"))
-			{
-				return TokenKind.ELSE_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("while"))
-			{
-				return TokenKind.WHILE_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("new"))
-			{
-				return TokenKind.NEW_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("true"))
-			{
-				return TokenKind.TRUE_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("false"))
-			{
-				return TokenKind.FALSE_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("boolean"))
-			{
-				return TokenKind.BOOLEAN_KW;
-			}
-			
-			else if (currentSpelling.toString().equals("int"))
-			{
-				return TokenKind.INT_KW;
-			}
-			
-			else
-			{
-				return TokenKind.ID;
-			}
+
+			return TokenKind.ID;
 		}
 		
 		else if (currentChar == '$')
@@ -360,7 +364,7 @@ public class Scanner{
 		try {
 			int c = inputStream.read();
 			currentChar = (char) c;
-			if (c == -1 || currentChar == eolUnix || currentChar == eolWindows) {
+			if (c == -1 || inputStream.available() == 0) { // || currentChar == eolUnix || currentChar == eolWindows) {
 				currentChar = '$';
 			}
 			else if (currentChar == '$') {

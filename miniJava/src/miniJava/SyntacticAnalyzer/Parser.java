@@ -57,17 +57,20 @@ import miniJava.ErrorReporter;
 
 		private void parseLineComment()
 		{
-			
+			accept(TokenKind.LINE_COMMENT);
 		}
 		
 		private void parseBlockComment()
 		{
 			accept(TokenKind.BLOCK_COMMENT_OPEN);
-			while (token.kind != TokenKind.BLOCK_COMMENT_CLOSE ||
+			while (token.kind != TokenKind.BLOCK_COMMENT_CLOSE &&
 					token.kind != TokenKind.EOT)
 			{
 				token = scanner.scan();
 			}
+			
+			if (token.kind == TokenKind.EOT)
+				accept(TokenKind.EOT);
 			
 			accept(TokenKind.BLOCK_COMMENT_CLOSE);
 		}
@@ -436,66 +439,6 @@ import miniJava.ErrorReporter;
 					parseSemicolon();
 				}
 			}
-			
-			/*else if (token.kind == TokenKind.ID ||
-					token.kind == TokenKind.THIS_KW)
-			{
-				if (token.kind == TokenKind.ID)
-				{
-					parseId();
-				}
-				
-				else
-					parseThisKW();
-				
-				while (true)
-				{
-					if (token.kind == TokenKind.PERIOD)
-					{
-						parsePeriod();
-						parseId();
-					}
-					
-					else
-						break;
-				}
-				
-				if (token.kind == TokenKind.ID)
-				{
-					parseId();
-					parseEquals();
-					parseExpression();
-					parseSemicolon();
-				}
-				
-				else if (token.kind == TokenKind.LBRACKET)
-				{
-					parseLBracket();
-					parseExpression();
-					parseRBracket();
-					parseEquals();
-					parseExpression();
-					parseSemicolon();
-					/*
-					if (token.kind == TokenKind.RBRACKET)
-					{
-						parseRBracket();
-						parseId();
-						parseEquals();
-						parseExpression();
-						parseSemicolon();
-					}
-					
-					else	// IxReference case
-					{
-						parseExpression();
-						parseRBracket();
-						parseEquals();
-						parseExpression();
-						parseSemicolon();
-					}
-				}
-			} */
 		}
 		
 		private void parseArgumentList()
@@ -623,11 +566,18 @@ import miniJava.ErrorReporter;
 				
 			}
 			
-			else
+			else if (token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID
+					|| token.kind == TokenKind.NEW_KW || token.kind == TokenKind.NUM
+					|| token.kind == TokenKind.LPAREN || token.kind == TokenKind.UNOP)
 			{
 				parseExpression();
 				parseBinop();
 				parseExpression();
+			}
+			
+			else
+			{
+				accept(TokenKind.EXPRESSION);
 			}
 		}
 		
@@ -775,14 +725,9 @@ import miniJava.ErrorReporter;
 				parseIntKW();
 			}
 			
-			else if (token.kind == TokenKind.ID)
-			{
-				parseId();
-			}
-			
 			else
 			{
-				// Error
+				parseId();
 			}
 			
 			if (token.kind == TokenKind.LBRACKET)
@@ -856,9 +801,53 @@ import miniJava.ErrorReporter;
 			if (token.kind == expectedTokenKind) {
 				if (trace)
 					pTrace();
+				
 				token = scanner.scan();
 				System.out.println(token.kind);
+				
+				while (token.kind == TokenKind.EOL)
+				{
+					token = scanner.scan();
+					System.out.println(token.kind);
+				}
+				
+				if (token.kind == TokenKind.LINE_COMMENT)
+				{
+					while (token.kind != TokenKind.EOL)
+					{
+						token = scanner.scan();
+					}
+					
+					while (token.kind == TokenKind.EOL)
+					{
+						token = scanner.scan();
+						System.out.println(token.kind);
+					}
+				}
+				
+				else if (token.kind == TokenKind.BLOCK_COMMENT_OPEN)
+				{
+					while (token.kind != TokenKind.BLOCK_COMMENT_CLOSE
+							&& token.kind != TokenKind.EOT)
+					{
+						token = scanner.scan();
+					}
+					
+					if (token.kind == TokenKind.BLOCK_COMMENT_CLOSE)
+					{	
+						token = scanner.scan();
+						
+						while (token.kind == TokenKind.EOL)
+						{
+							token = scanner.scan();
+							System.out.println(token.kind);
+						}
+					}
+					
+					System.out.println(token.kind);
+				}
 			}
+			
 			else
 				parseError("expecting '" + expectedTokenKind +
 						"' but found '" + token.kind + "'");
