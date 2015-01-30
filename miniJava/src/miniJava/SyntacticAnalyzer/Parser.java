@@ -38,14 +38,23 @@ import miniJava.ErrorReporter;
 		public void parse() {
 			token = scanner.scan();
 			
-			if (token.kind == TokenKind.BLOCK_COMMENT_OPEN)
+			while (token.kind == TokenKind.EOL || token.kind == TokenKind.LINE_COMMENT
+					|| token.kind == TokenKind.BLOCK_COMMENT_OPEN)
 			{
-				parseBlockComment();
-			}
-			
-			else if (token.kind == TokenKind.LINE_COMMENT)
-			{
-				parseLineComment();
+				if (token.kind == TokenKind.LINE_COMMENT)
+				{
+					parseLineComment();
+				}
+				
+				else if (token.kind == TokenKind.EOL)
+				{
+					parseEOL();
+				}
+				
+				else if (token.kind == TokenKind.BLOCK_COMMENT_OPEN)
+				{
+					parseBlockComment();
+				}
 			}
 			
 			System.out.println(token.kind);
@@ -53,26 +62,6 @@ import miniJava.ErrorReporter;
 				parseProgram();
 			}
 			catch (SyntaxError e) { }
-		}
-
-		private void parseLineComment()
-		{
-			accept(TokenKind.LINE_COMMENT);
-		}
-		
-		private void parseBlockComment()
-		{
-			accept(TokenKind.BLOCK_COMMENT_OPEN);
-			while (token.kind != TokenKind.BLOCK_COMMENT_CLOSE &&
-					token.kind != TokenKind.EOT)
-			{
-				token = scanner.scan();
-			}
-			
-			if (token.kind == TokenKind.EOT)
-				accept(TokenKind.EOT);
-			
-			accept(TokenKind.BLOCK_COMMENT_CLOSE);
 		}
 		
 		private void parseProgram() throws SyntaxError
@@ -151,22 +140,6 @@ import miniJava.ErrorReporter;
 			
 			parseRBrace();
 			
-		}
-		
-		private void parseClassKW()
-		{
-			accept(TokenKind.CLASS_KW);
-			
-		}
-		
-		private void parseReturn()
-		{
-			accept(TokenKind.RETURN_KW);
-		}
-		
-		private void parseRBrace()
-		{
-			accept(TokenKind.RBRACE);
 		}
 		
 		private void parseStatement()
@@ -513,7 +486,8 @@ import miniJava.ErrorReporter;
 				parseRParen();
 			}
 			
-			else if (token.kind == TokenKind.UNOP)
+			else if (token.kind == TokenKind.SUBTRACT ||
+					token.kind == TokenKind.UNOP)
 			{
 				parseUnop();
 				parseExpression();
@@ -566,77 +540,16 @@ import miniJava.ErrorReporter;
 				
 			}
 			
-			else if (token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID
-					|| token.kind == TokenKind.NEW_KW || token.kind == TokenKind.NUM
-					|| token.kind == TokenKind.LPAREN || token.kind == TokenKind.UNOP)
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
-				parseExpression();
 				parseBinop();
 				parseExpression();
 			}
 			
-			else
+			/*else
 			{
 				accept(TokenKind.EXPRESSION);
-			}
-		}
-		
-		private void parseBinop()
-		{
-			accept(TokenKind.BINOP);
-		}
-		
-		private void parseUnop()
-		{
-			accept(TokenKind.UNOP);
-		}
-		
-		private void parseNum()
-		{
-			accept(TokenKind.NUM);
-		}
-		
-		private void parseTrueKW()
-		{
-			accept(TokenKind.TRUE_KW);
-		}
-		
-		private void parseFalseKW()
-		{
-			accept(TokenKind.FALSE_KW);
-		}
-		private void parseNewKW()
-		{
-			accept(TokenKind.NEW_KW);
-		}
-		
-		private void parseThisKW()
-		{
-			accept(TokenKind.THIS_KW);
-		}
-		
-		private void parsePeriod()
-		{
-			accept(TokenKind.PERIOD);
-		}
-		private void parseEquals()
-		{
-			accept(TokenKind.EQUALS);
-		}
-		
-		private void parseWhileKW()
-		{
-			accept(TokenKind.WHILE_KW);
-		}
-		
-		private void parseElseKW()
-		{
-			accept(TokenKind.ELSE_KW);
-		}
-		
-		private void parseIfKW()
-		{
-			accept(TokenKind.IF_KW);
+			}*/
 		}
 		
 		private void parseParameterList()
@@ -656,32 +569,6 @@ import miniJava.ErrorReporter;
 				else
 					break;
 			}
-		}
-		
-		private void parseComma()
-		{
-			accept(TokenKind.COMMA);
-		}
-		
-		private void parseRParen()
-		{
-			accept(TokenKind.RPAREN);
-		}
-		
-		private void parseLParen()
-		{
-			accept(TokenKind.LPAREN);
-		}
-		
-		private void parseSemicolon()
-		{
-			accept(TokenKind.SEMICOLON);
-		}
-		
-		private void parseFieldDec()
-		{
-			parseDeclarators();
-			parseId();
 		}
 		
 		private void parseDeclarators()
@@ -738,6 +625,118 @@ import miniJava.ErrorReporter;
 			
 		}
 		
+		private void parseLineComment()
+		{
+			accept(TokenKind.LINE_COMMENT);
+			while (token.kind != TokenKind.EOL)
+				token = scanner.scan();
+			System.out.println(token.kind);
+			accept(TokenKind.EOL);
+		}
+		
+		private void parseBlockComment()
+		{
+			accept(TokenKind.BLOCK_COMMENT_OPEN);
+			while (token.kind != TokenKind.BLOCK_COMMENT_CLOSE &&
+					token.kind != TokenKind.EOT)
+			{
+				token = scanner.scan();
+			}
+			
+			System.out.println(token.kind);
+			
+			if (token.kind == TokenKind.EOT)
+				accept(TokenKind.EOT);
+			
+			accept(TokenKind.BLOCK_COMMENT_CLOSE);
+		}
+		
+		private void parseComma()
+		{
+			accept(TokenKind.COMMA);
+		}
+		
+		private void parseRParen()
+		{
+			accept(TokenKind.RPAREN);
+		}
+		
+		private void parseLParen()
+		{
+			accept(TokenKind.LPAREN);
+		}
+		
+		private void parseSemicolon()
+		{
+			accept(TokenKind.SEMICOLON);
+		}
+		
+		private void parseBinop()
+		{
+			if (token.kind == TokenKind.SUBTRACT)
+				accept(TokenKind.SUBTRACT);
+			else
+				accept(TokenKind.BINOP);
+		}
+		
+		private void parseUnop()
+		{
+			if (token.kind == TokenKind.SUBTRACT)
+				accept(TokenKind.SUBTRACT);
+			else
+				accept(TokenKind.UNOP);
+		}
+		
+		private void parseNum()
+		{
+			accept(TokenKind.NUM);
+		}
+		
+		private void parseTrueKW()
+		{
+			accept(TokenKind.TRUE_KW);
+		}
+		
+		private void parseFalseKW()
+		{
+			accept(TokenKind.FALSE_KW);
+		}
+		
+		private void parseNewKW()
+		{
+			accept(TokenKind.NEW_KW);
+		}
+		
+		private void parseThisKW()
+		{
+			accept(TokenKind.THIS_KW);
+		}
+		
+		private void parsePeriod()
+		{
+			accept(TokenKind.PERIOD);
+		}
+		
+		private void parseEquals()
+		{
+			accept(TokenKind.EQUALS);
+		}
+		
+		private void parseWhileKW()
+		{
+			accept(TokenKind.WHILE_KW);
+		}
+		
+		private void parseElseKW()
+		{
+			accept(TokenKind.ELSE_KW);
+		}
+		
+		private void parseIfKW()
+		{
+			accept(TokenKind.IF_KW);
+		}
+		
 		private void parseStaticDec()
 		{
 			accept(TokenKind.STATIC_KW);
@@ -761,6 +760,22 @@ import miniJava.ErrorReporter;
 		private void parseIntKW()
 		{
 			accept(TokenKind.INT_KW);
+		}
+		
+		private void parseClassKW()
+		{
+			accept(TokenKind.CLASS_KW);
+			
+		}
+		
+		private void parseReturn()
+		{
+			accept(TokenKind.RETURN_KW);
+		}
+		
+		private void parseRBrace()
+		{
+			accept(TokenKind.RBRACE);
 		}
 		
 		private void parseBooleanKW()
@@ -788,6 +803,11 @@ import miniJava.ErrorReporter;
 			accept(TokenKind.LBRACE);
 		}
 		
+		private void parseEOL()
+		{
+			accept(TokenKind.EOL);
+		}
+		
 		private void acceptIt() throws SyntaxError {
 			accept(token.kind);
 		}
@@ -805,47 +825,25 @@ import miniJava.ErrorReporter;
 				token = scanner.scan();
 				System.out.println(token.kind);
 				
-				while (token.kind == TokenKind.EOL)
+				while (token.kind == TokenKind.EOL || token.kind == TokenKind.LINE_COMMENT
+						|| token.kind == TokenKind.BLOCK_COMMENT_OPEN)
 				{
-					token = scanner.scan();
-					System.out.println(token.kind);
+					if (token.kind == TokenKind.LINE_COMMENT)
+					{
+						parseLineComment();
+					}
+					
+					else if (token.kind == TokenKind.EOL)
+					{
+						parseEOL();
+					}
+					
+					else if (token.kind == TokenKind.BLOCK_COMMENT_OPEN)
+					{
+						parseBlockComment();
+					}
 				}
 				
-				if (token.kind == TokenKind.LINE_COMMENT)
-				{
-					while (token.kind != TokenKind.EOL)
-					{
-						token = scanner.scan();
-					}
-					
-					while (token.kind == TokenKind.EOL)
-					{
-						token = scanner.scan();
-						System.out.println(token.kind);
-					}
-				}
-				
-				else if (token.kind == TokenKind.BLOCK_COMMENT_OPEN)
-				{
-					while (token.kind != TokenKind.BLOCK_COMMENT_CLOSE
-							&& token.kind != TokenKind.EOT)
-					{
-						token = scanner.scan();
-					}
-					
-					if (token.kind == TokenKind.BLOCK_COMMENT_CLOSE)
-					{	
-						token = scanner.scan();
-						
-						while (token.kind == TokenKind.EOL)
-						{
-							token = scanner.scan();
-							System.out.println(token.kind);
-						}
-					}
-					
-					System.out.println(token.kind);
-				}
 			}
 			
 			else

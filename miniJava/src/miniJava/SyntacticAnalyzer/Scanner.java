@@ -327,7 +327,13 @@ public class Scanner{
 			return(TokenKind.EOT);
 		}
 		
-		return(TokenKind.ERROR);	
+		else
+		{
+			nextChar();
+			return(TokenKind.ERROR);
+		}
+		
+		return(TokenKind.ERROR);
 	}
 
 	private void takeIt() {
