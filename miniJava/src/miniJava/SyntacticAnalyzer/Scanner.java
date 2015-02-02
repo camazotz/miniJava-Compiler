@@ -236,87 +236,86 @@ public class Scanner{
 			return(TokenKind.NUM);
 		}
 		
-		else if (Character.toString(currentChar).matches("^[a-zA-Z0-9]"))
+		else if (Character.toString(currentChar).matches("^[a-zA-Z]"))
 		{
-			while (Character.toString(currentChar).matches("^[a-zA-Z0-9]"))
+			while (Character.toString(currentChar).matches("^[a-zA-Z0-9_]"))
 			{
 				takeIt();
+			}
 			
-				if (currentSpelling.toString().equals("class"))
-				{
-					return TokenKind.CLASS_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("public"))
-				{
-					return TokenKind.PUBLIC_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("private"))
-				{
-					return TokenKind.PRIVATE_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("static"))
-				{
-					return TokenKind.STATIC_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("void"))
-				{
-					return TokenKind.VOID_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("return"))
-				{
-					return TokenKind.RETURN_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("this"))
-				{
-					return TokenKind.THIS_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("if"))
-				{
-					return TokenKind.IF_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("else"))
-				{
-					return TokenKind.ELSE_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("while"))
-				{
-					return TokenKind.WHILE_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("new"))
-				{
-					return TokenKind.NEW_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("true"))
-				{
-					return TokenKind.TRUE_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("false"))
-				{
-					return TokenKind.FALSE_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("boolean"))
-				{
-					return TokenKind.BOOLEAN_KW;
-				}
-				
-				else if (currentSpelling.toString().equals("int"))
-				{
-					return TokenKind.INT_KW;
-				}
+			if (currentSpelling.toString().equals("class"))
+			{
+				return TokenKind.CLASS_KW;
+			}
 			
+			else if (currentSpelling.toString().equals("public"))
+			{
+				return TokenKind.PUBLIC_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("private"))
+			{
+				return TokenKind.PRIVATE_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("static"))
+			{
+				return TokenKind.STATIC_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("void"))
+			{
+				return TokenKind.VOID_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("return"))
+			{
+				return TokenKind.RETURN_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("this"))
+			{
+				return TokenKind.THIS_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("if"))
+			{
+				return TokenKind.IF_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("else"))
+			{
+				return TokenKind.ELSE_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("while"))
+			{
+				return TokenKind.WHILE_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("new"))
+			{
+				return TokenKind.NEW_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("true"))
+			{
+				return TokenKind.TRUE_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("false"))
+			{
+				return TokenKind.FALSE_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("boolean"))
+			{
+				return TokenKind.BOOLEAN_KW;
+			}
+			
+			else if (currentSpelling.toString().equals("int"))
+			{
+				return TokenKind.INT_KW;
 			}
 
 			return TokenKind.ID;
@@ -352,7 +351,6 @@ public class Scanner{
 	private void scanError(String m) {
 		reporter.reportError("Scan Error:  " + m);
 	}
-
 
 	private final static char eolUnix = '\n';
 	private final static char eolWindows = '\r';

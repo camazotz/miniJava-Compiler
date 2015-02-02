@@ -66,7 +66,18 @@ import miniJava.ErrorReporter;
 		
 		private void parseProgram() throws SyntaxError
 		{
-			parseClassDec();
+			while (true)
+			{
+				
+				if (token.kind == TokenKind.CLASS_KW)
+				{
+					parseClassDec();
+				}
+				
+				else
+					break;
+			}
+
 			accept(TokenKind.EOT);
 		}
 		
@@ -188,6 +199,7 @@ import miniJava.ErrorReporter;
 			
 			else if (token.kind == TokenKind.BOOLEAN_KW)
 			{
+				parseBooleanKW();
 				parseId();
 				parseEquals();
 				parseExpression();
@@ -627,16 +639,16 @@ import miniJava.ErrorReporter;
 		
 		private void parseLineComment()
 		{
-			accept(TokenKind.LINE_COMMENT);
+			//accept(TokenKind.LINE_COMMENT);
 			while (token.kind != TokenKind.EOL)
 				token = scanner.scan();
 			System.out.println(token.kind);
-			accept(TokenKind.EOL);
+		//	accept(TokenKind.EOL);
 		}
 		
 		private void parseBlockComment()
 		{
-			accept(TokenKind.BLOCK_COMMENT_OPEN);
+			//accept(TokenKind.BLOCK_COMMENT_OPEN);
 			while (token.kind != TokenKind.BLOCK_COMMENT_CLOSE &&
 					token.kind != TokenKind.EOT)
 			{
@@ -648,7 +660,12 @@ import miniJava.ErrorReporter;
 			if (token.kind == TokenKind.EOT)
 				accept(TokenKind.EOT);
 			
-			accept(TokenKind.BLOCK_COMMENT_CLOSE);
+			//accept(TokenKind.BLOCK_COMMENT_CLOSE);
+			else
+			{
+				token = scanner.scan();
+				System.out.println(token.kind);
+			}
 		}
 		
 		private void parseComma()
