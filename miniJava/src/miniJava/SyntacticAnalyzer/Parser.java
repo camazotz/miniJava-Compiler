@@ -149,8 +149,7 @@ import miniJava.ErrorReporter;
 					break;
 			}
 			
-			parseRBrace();
-			
+			parseRBrace();	
 		}
 		
 		private void parseStatement()
@@ -640,7 +639,7 @@ import miniJava.ErrorReporter;
 		private void parseLineComment()
 		{
 			//accept(TokenKind.LINE_COMMENT);
-			while (token.kind != TokenKind.EOL)
+			while (token.kind != TokenKind.EOL && token.kind != TokenKind.EOT)
 				token = scanner.scan();
 			System.out.println(token.kind);
 		//	accept(TokenKind.EOL);

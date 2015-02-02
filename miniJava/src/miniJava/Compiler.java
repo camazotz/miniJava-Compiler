@@ -19,6 +19,8 @@ import miniJava.SyntacticAnalyzer.Scanner;
  */
 
 
+
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -44,7 +46,8 @@ public class Compiler {
 		}
 		else {
 			try {
-				inputStream = new FileInputStream(args[0]);
+				java.io.File sourceFile = new java.io.File(args[0]);
+				inputStream = new FileInputStream(sourceFile);
 			} catch (FileNotFoundException e) {
 				System.out.println("Input file " + args[0] + " not found");
 				System.exit(1);
