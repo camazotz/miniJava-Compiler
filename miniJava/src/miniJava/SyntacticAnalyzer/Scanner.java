@@ -369,7 +369,7 @@ public class Scanner{
 			int c = inputStream.read();
 			currentChar = (char) c;
 			
-			if (c == -1){// || inputStream.available() == 0) { // || currentChar == eolUnix || currentChar == eolWindows) {
+			if (c == -1 || inputStream.available() == 0) { // || currentChar == eolUnix || currentChar == eolWindows) {
 				currentChar = '$';
 			}
 			else if (currentChar == '$') {

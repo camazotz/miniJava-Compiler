@@ -69,6 +69,17 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Package parseProgram() throws SyntaxError
 		{
 			Package programAst = null;
+			ClassDeclList clListAst = parseClassDecList();
+			
+			programAst = new Package(clListAst, null);
+			accept(TokenKind.EOT);
+			ASTDisplay disp = new ASTDisplay();
+			disp.showTree(programAst);
+			return programAst;
+		}
+		
+		private ClassDeclList parseClassDecList() throws SyntaxError
+		{
 			ClassDeclList clListAst = new ClassDeclList();
 			while (true)
 			{
@@ -80,17 +91,14 @@ import miniJava.AbstractSyntaxTrees.Package;
 				else
 					break;
 			}
-			
-			programAst = new Package(clListAst, null);
-			accept(TokenKind.EOT);
-			return programAst;
+			return clListAst;
 		}
 		
 		private ClassDecl parseClassDec() throws SyntaxError
 		{
 			ClassDecl clAst = null;
-			FieldDeclList flAst = null;
-			MethodDeclList mlAst = null;
+			FieldDeclList flAst = new FieldDeclList();
+			MethodDeclList mlAst = new MethodDeclList();
 			
 			parseClassKW();
 			
@@ -112,12 +120,15 @@ import miniJava.AbstractSyntaxTrees.Package;
 					if (token.kind == TokenKind.SEMICOLON)
 					{
 						parseSemicolon();
+						flAst.add((FieldDecl)mdAst);
 					}
 					
 					// Method Declaration
 					else
 					{
 						ParameterDeclList pdlAst = null;
+						StatementList stlAst = null;
+						Expression returnExp = null;
 						parseLParen();
 						if (token.kind == TokenKind.RPAREN)
 						{
@@ -139,7 +150,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 									token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID ||
 									token.kind == TokenKind.INT_KW || token.kind == TokenKind.BOOLEAN_KW)
 							{
-								parseStatement();
+								stlAst = parseStatementList();
 							}
 							
 							else
@@ -149,11 +160,13 @@ import miniJava.AbstractSyntaxTrees.Package;
 						if (token.kind == TokenKind.RETURN_KW)
 						{
 							parseReturn();
-							parseExpression();
+							returnExp = parseExpression();
 							parseSemicolon();
 						}
 						
 						parseRBrace();
+						mdAst = new MethodDecl(mdAst, pdlAst, stlAst, returnExp, null);
+						mlAst.add((MethodDecl)mdAst);
 					}
 				}
 				
@@ -166,15 +179,13 @@ import miniJava.AbstractSyntaxTrees.Package;
 			return clAst;
 		}
 		
-		private Statement parseStatement()
+		private StatementList parseStatementList()
 		{
-			StatementList stlAst = null;
-			
+			StatementList stlAst = new StatementList();		
 			Statement stAst = null;
 			if (token.kind == TokenKind.LBRACE)
 			{
-				parseLBrace();
-				
+				parseLBrace();		
 				while (true)
 				{
 					if (token.kind != TokenKind.RBRACE)
@@ -186,11 +197,20 @@ import miniJava.AbstractSyntaxTrees.Package;
 					else
 						break;
 				}
-				
 				parseRBrace();
 			}
 			
-			else if (token.kind == TokenKind.IF_KW)
+			else {
+				stAst = parseStatement();
+				stlAst.add(stAst);
+			}
+			return stlAst;
+		}
+		
+		private Statement parseStatement()
+		{
+			Statement stAst = null;
+			if (token.kind == TokenKind.IF_KW)
 			{
 				stAst = parseIfKW();
 			}
@@ -216,6 +236,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 				Expression eAst = null;
 				String name = null;
 				Identifier typeId = new Identifier(token, null);
+				Reference idR = new IdRef(typeId, null);
 				parseId();
 				
 				if (token.kind == TokenKind.ID)
@@ -238,14 +259,18 @@ import miniJava.AbstractSyntaxTrees.Package;
 				else if (token.kind == TokenKind.LPAREN)
 				{
 					// Ref
+					CallStmt cstAst = null;
+					ExprList elAst = null;
 					parseLParen();
 					if (token.kind != TokenKind.RPAREN)
 					{
-						parseArgumentList();
+						elAst = parseArgumentList();
 					}
 					
 					parseRParen();
 					parseSemicolon();
+					cstAst = new CallStmt(idR, elAst, null);
+					stAst = cstAst;
 				}
 				
 				else if (token.kind == TokenKind.LBRACKET)
@@ -256,22 +281,36 @@ import miniJava.AbstractSyntaxTrees.Package;
 					{
 						// Type
 						parseRBracket();
+						VarDeclStmt vdsAst = null;
+						VarDecl vd = null;
+						name = token.spelling;
+						tAst = new ClassType(typeId, null);
+						tAst = new ArrayType(tAst, null);
 						
 						parseId();
 						parseEquals();
-						parseExpression();
+						eAst = parseExpression();
 						parseSemicolon();
+						
+						vd = new VarDecl(tAst, name, null);
+						vdsAst = new VarDeclStmt(vd, eAst, null);
+						stAst = vdsAst;
 					}
 					
 					else
 					{
 						// IxRef
-						parseExpression();
+						AssignStmt asAst = null;
+						IndexedRef irAst = null;
+						eAst = parseExpression();
 						parseRBracket();
+						irAst = new IndexedRef(idR, eAst, null);
 						
 						parseEquals();
-						parseExpression();
+						eAst = parseExpression();
 						parseSemicolon();
+						asAst = new AssignStmt(irAst, eAst, null);
+						stAst = asAst;
 					}
 				}
 				
@@ -280,6 +319,8 @@ import miniJava.AbstractSyntaxTrees.Package;
 					while (token.kind == TokenKind.PERIOD)
 					{
 						parsePeriod();
+						Identifier typeId2 = new Identifier(token, null);
+						idR = new QualifiedRef(idR, typeId2, null);
 						parseId();
 					}
 					
@@ -287,14 +328,17 @@ import miniJava.AbstractSyntaxTrees.Package;
 					{
 						// Ref
 						parseLParen();
-						
+						CallStmt cstAst = null;
+						ExprList expListAst = null;
 						if (token.kind != TokenKind.RPAREN)
 						{
-							parseArgumentList();
+							expListAst = parseArgumentList();
 						}
 						
 						parseRParen();
 						parseSemicolon();
+						cstAst = new CallStmt(idR, expListAst, null);
+						stAst = cstAst;
 					}
 					
 					else if (token.kind == TokenKind.LBRACKET)
@@ -313,118 +357,162 @@ import miniJava.AbstractSyntaxTrees.Package;
 						else
 						{
 							// IxRef
-							parseExpression();
+							AssignStmt asAst = null;
+							IndexedRef irAst = null;
+							eAst = parseExpression();
 							parseRBracket();
+							irAst = new IndexedRef(idR, eAst, null);
 							
 							parseEquals();
-							parseExpression();
+							eAst = parseExpression();
 							parseSemicolon();
+							asAst = new AssignStmt(irAst, eAst, null);
+							stAst = asAst;
 						}
 					}
 					
 					else if (token.kind == TokenKind.EQUALS)
 					{
+						// IxRef
+						AssignStmt asAst = null;
 						parseEquals();
-						parseExpression();
+						eAst = parseExpression();
 						parseSemicolon();
+						asAst = new AssignStmt(idR, eAst, null);
+						stAst = asAst;
 					}
 				}
 				
 				else
 				{
 					// IxRef from Equals
+					AssignStmt asAst = null;
 					parseEquals();
-					parseExpression();
+					eAst = parseExpression();
 					parseSemicolon();
+					asAst = new AssignStmt(idR, eAst, null);
+					stAst = asAst;
 				}
 			}
 			
 			else if (token.kind == TokenKind.THIS_KW)
 			{
+				Reference tr = new ThisRef(null);
+				Expression eAst = null;
 				parseThisKW();
 				if (token.kind == TokenKind.LPAREN)
 				{
 					// Ref
 					parseLParen();
-					
+					CallStmt csAst = null;
+					ExprList expListAst = null;
 					if (token.kind != TokenKind.RPAREN)
 					{
-						parseArgumentList();
+						expListAst = parseArgumentList();
 					}
 					
 					parseRParen();
 					parseSemicolon();
+					csAst = new CallStmt(tr, expListAst, null);
+					stAst = csAst;
 				}
 				
 				else if (token.kind == TokenKind.LBRACKET)
 				{
 					// IxRef
 					parseLBracket();
-					parseExpression();
+					AssignStmt asAst = null;
+					IndexedRef irRef = null;				
+					eAst = parseExpression();
 					parseRBracket();
+					irRef = new IndexedRef(tr, eAst, null);
 					
 					parseEquals();
-					parseExpression();
+					eAst = parseExpression();
 					parseSemicolon();
+					asAst = new AssignStmt(irRef, eAst, null);
+					stAst = asAst;
 				}
 				
 				else if (token.kind == TokenKind.EQUALS)
 				{
+					AssignStmt asAst = null;
 					parseEquals();
-					parseExpression();
+					eAst = parseExpression();
 					parseSemicolon();
+					asAst = new AssignStmt(tr, eAst, null);
+					stAst = asAst;
 				}
 				
 				else if (token.kind == TokenKind.PERIOD)
 				{
+					Identifier idR = null;
+					
 					while (token.kind == TokenKind.PERIOD)
 					{
 						parsePeriod();
+						idR = new Identifier(token, null);
 						parseId();
+						tr = new QualifiedRef(tr, idR, null);
 					}
 					
 					if (token.kind == TokenKind.LPAREN)
 					{
 						// Ref
 						parseLParen();
-						
+						CallStmt csAst = null;
+						ExprList expListAst = null;
 						if (token.kind != TokenKind.RPAREN)
 						{
-							parseArgumentList();
+							expListAst = parseArgumentList();
 						}
 						
 						parseRParen();
 						parseSemicolon();
+						csAst = new CallStmt(tr, expListAst, null);
+						stAst = csAst;
 					}
 					
 					else if (token.kind == TokenKind.LBRACKET)
 					{
 						// IxRef
+						AssignStmt asAst = null;
+						IndexedRef irRef = null;
 						parseLBracket();
-						parseExpression();
+						eAst = parseExpression();
 						parseRBracket();
+						irRef = new IndexedRef(tr, eAst, null);
 						
 						parseEquals();
-						parseExpression();
+						eAst = parseExpression();
 						parseSemicolon();
+						asAst = new AssignStmt(irRef, eAst, null);
+						stAst = asAst;
 					}
 					
 					else if (token.kind == TokenKind.EQUALS)
 					{
+						AssignStmt asAst = null;
 						parseEquals();
-						parseExpression();
+						eAst = parseExpression();
 						parseSemicolon();
+						asAst = new AssignStmt(tr, eAst, null);
+						stAst = asAst;
 					}
 				}
 				
 				else
 				{
 					// IxRef from Equals
+					AssignStmt asAst = null;
 					parseEquals();
-					parseExpression();
+					eAst = parseExpression();
 					parseSemicolon();
+					asAst = new AssignStmt(tr, eAst, null);
+					stAst = asAst;
 				}
 			}
+			return stAst;
 		}
 		
 		private VarDeclStmt parseVarDeclStmt() {
@@ -575,8 +663,14 @@ import miniJava.AbstractSyntaxTrees.Package;
 				Operator op = new Operator(token, null);
 				Expression eAst2 = null;
 				parseUnop();
-				eAst2 = parseExpression();
-				UnaryExpr uexp = new UnaryExpr(op, eAst2, null);
+				if (token.kind == TokenKind.SUBTRACT)
+					parseError("Not a valid miniJava expression.");
+				else
+				{
+					eAst2 = parseExpression();
+					UnaryExpr uexp = new UnaryExpr(op, eAst2, null);
+					eAst = uexp;
+				}
 			}
 			
 			else if (token.kind == TokenKind.THIS_KW ||
@@ -640,21 +734,28 @@ import miniJava.AbstractSyntaxTrees.Package;
 					eAst = rexp;
 				}
 				
+				else if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT
+						|| token.kind == TokenKind.SEMICOLON)
+				{
+					RefExpr rexp = new RefExpr(refAst, null);
+					eAst = rexp;
+				}
 			}
 			
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp = new Operator(token, null);
 				parseBinop();
+				if (expOp.kind == TokenKind.SUBTRACT)
+				{
+					if (token.kind == TokenKind.SUBTRACT)
+						parseError("Not a valid miniJava expression.");
+				}
 				Expression eAst2 = parseExpression();
 				eAst = new BinaryExpr(expOp, eAst, eAst2, null);
 			}
 			
 			return eAst;
-			/*else
-			{
-				accept(TokenKind.EXPRESSION);
-			}*/
 		}
 		
 		private ParameterDeclList parseParameterList()
@@ -694,7 +795,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private MemberDecl parseMemberDecl()
 		{
 			MemberDecl md = null;
-			boolean isPrivate = (Boolean) null, isStatic = (Boolean)null;
+			boolean isPrivate = false, isStatic = false;
 			
 			BaseType memType = null;
 			String name = null;
@@ -886,8 +987,8 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private WhileStmt parseWhileKW()
 		{
 			WhileStmt whileAst = null;
-			
 			accept(TokenKind.WHILE_KW);
+			
 			parseLParen();
 			Expression eAst = parseExpression();
 			parseRParen();
@@ -905,8 +1006,8 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private IfStmt parseIfKW()
 		{
 			IfStmt ifAst = null;
-			
 			accept(TokenKind.IF_KW);
+			
 			parseLParen();
 			Expression eAst = parseExpression();
 			parseRParen();
