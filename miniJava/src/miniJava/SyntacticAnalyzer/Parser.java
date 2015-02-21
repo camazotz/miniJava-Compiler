@@ -249,7 +249,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 				else if (token.kind == TokenKind.LPAREN)
 				{
 					// Ref
-					CallStmt cstAst = null;
+					CallStmt cstAst;
 					ExprList elAst = null;
 					parseLParen();
 					if (token.kind != TokenKind.RPAREN)
@@ -328,7 +328,8 @@ import miniJava.AbstractSyntaxTrees.Package;
 						{
 							expListAst = parseArgumentList();
 						}
-						
+						else
+							expListAst = new ExprList();
 						parseRParen();
 						parseSemicolon();
 						cstAst = new CallStmt(idR, expListAst, null);
@@ -651,7 +652,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 			else if (token.kind == TokenKind.LPAREN)
 			{
 				parseLParen();
-				parseExpression();
+				eAst = parseExpression();
 				parseRParen();
 				//eAst = binopExpression(eAst);
 			}
@@ -705,6 +706,18 @@ import miniJava.AbstractSyntaxTrees.Package;
 						break;
 				}
 				
+				if (token.kind == TokenKind.LBRACKET)	// IxReference
+				{
+					RefExpr rexp = null;
+					parseLBracket();
+					Expression someAst = parseExpression();
+					parseRBracket();
+					refAst = new IndexedRef(refAst, someAst, null);
+					
+					rexp = new RefExpr(refAst, null);
+					eAst = rexp;
+				}
+				
 				if (token.kind == TokenKind.LPAREN)		// IxReference (ArgList?)
 				{
 					parseLParen();
@@ -721,18 +734,6 @@ import miniJava.AbstractSyntaxTrees.Package;
 					parseRParen();
 					cexp = new CallExpr(refAst, expListAst, null);
 					eAst = cexp;
-				}
-				
-				else if (token.kind == TokenKind.LBRACKET)	// IxReference
-				{
-					RefExpr rexp = null;
-					parseLBracket();
-					Expression someAst = parseExpression();
-					parseRBracket();
-					refAst = new IndexedRef(refAst, someAst, null);
-					
-					rexp = new RefExpr(refAst, null);
-					eAst = rexp;
 				}
 				
 				else
