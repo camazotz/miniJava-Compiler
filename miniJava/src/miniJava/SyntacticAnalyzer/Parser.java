@@ -127,7 +127,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 					else
 					{
 						ParameterDeclList pdlAst = null;
-						StatementList stlAst = null;
+						StatementList stlAst = new StatementList();
 						Expression returnExp = null;
 						parseLParen();
 						if (token.kind == TokenKind.RPAREN)
@@ -144,18 +144,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 						
 						parseLBrace();
 						
-						while (true)
-						{
-							if (token.kind == TokenKind.IF_KW || token.kind == TokenKind.WHILE_KW ||
-									token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID ||
-									token.kind == TokenKind.INT_KW || token.kind == TokenKind.BOOLEAN_KW)
-							{
-								stlAst = parseStatementList();
-							}
-							
-							else
-								break;
-						}
+						stlAst = parseStatementList();
 						
 						if (token.kind == TokenKind.RETURN_KW)
 						{
@@ -183,26 +172,27 @@ import miniJava.AbstractSyntaxTrees.Package;
 		{
 			StatementList stlAst = new StatementList();		
 			Statement stAst = null;
-			if (token.kind == TokenKind.LBRACE)
+			while (token.kind == TokenKind.IF_KW || token.kind == TokenKind.WHILE_KW ||
+				token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID ||
+				token.kind == TokenKind.INT_KW || token.kind == TokenKind.BOOLEAN_KW ||
+				token.kind == TokenKind.LBRACE)
 			{
-				parseLBrace();		
-				while (true)
+				if (token.kind == TokenKind.LBRACE)
 				{
-					if (token.kind != TokenKind.RBRACE)
+					parseLBrace();		
+					while (token.kind != TokenKind.RBRACE)
 					{
 						stAst = parseStatement();
 						stlAst.add(stAst);
 					}
 					
-					else
-						break;
+					parseRBrace();
 				}
-				parseRBrace();
-			}
-			
-			else {
-				stAst = parseStatement();
-				stlAst.add(stAst);
+				
+				else {
+					stAst = parseStatement();
+					stlAst.add(stAst);
+				}
 			}
 			return stlAst;
 		}
@@ -267,6 +257,10 @@ import miniJava.AbstractSyntaxTrees.Package;
 						elAst = parseArgumentList();
 					}
 					
+					else
+					{
+						elAst = new ExprList();
+					}
 					parseRParen();
 					parseSemicolon();
 					cstAst = new CallStmt(idR, elAst, null);
@@ -581,7 +575,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 			return expListAst;
 		}
 		
-		private Expression parseExpression()
+		private Expression justExpression() 
 		{
 			Expression eAst = null;
 			if (token.kind == TokenKind.NEW_KW)
@@ -630,28 +624,28 @@ import miniJava.AbstractSyntaxTrees.Package;
 					}
 				}
 				eAst = newAst;
-				eAst = binopExpression(eAst);
+				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.NUM)
 			{
 				LiteralExpr lexp = parseNum();
 				eAst = lexp;
-				eAst = binopExpression(eAst);
+				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.TRUE_KW)
 			{
 				LiteralExpr lexp = parseTrueKW();
 				eAst = lexp;
-				eAst = binopExpression(eAst);
+				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.FALSE_KW)
 			{
 				LiteralExpr lexp = parseFalseKW();
 				eAst = lexp;
-				eAst = binopExpression(eAst);
+				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.LPAREN)
@@ -659,7 +653,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 				parseLParen();
 				parseExpression();
 				parseRParen();
-				eAst = binopExpression(eAst);
+				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.SUBTRACT ||
@@ -676,7 +670,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 					UnaryExpr uexp = new UnaryExpr(op, eAst2, null);
 					eAst = uexp;
 				}
-				eAst = binopExpression(eAst);
+				//eAst = binopExpression(eAst);
 			}
 			
 			else  //if (token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID)
@@ -722,6 +716,8 @@ import miniJava.AbstractSyntaxTrees.Package;
 						expListAst = parseArgumentList();
 					}
 					
+					else
+						expListAst = new ExprList();
 					parseRParen();
 					cexp = new CallExpr(refAst, expListAst, null);
 					eAst = cexp;
@@ -739,65 +735,328 @@ import miniJava.AbstractSyntaxTrees.Package;
 					eAst = rexp;
 				}
 				
-				else if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT
+				else
+				{
+					RefExpr rexp = new RefExpr(refAst, null);
+					eAst = rexp;
+				}
+				/*else if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT
 						|| token.kind == TokenKind.SEMICOLON)
 				{
 					RefExpr rexp = new RefExpr(refAst, null);
 					eAst = rexp;
-					eAst = binopExpression(eAst);
-				}
+					//eAst = binopExpression(eAst);
+				}*/
 			}
-			
-			/*if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
-			{
-				Operator expOp = new Operator(token, null);
-				parseBinop();
-				if (expOp.kind == TokenKind.SUBTRACT)
-				{
-					if (token.kind == TokenKind.SUBTRACT)
-						parseError("Not a valid miniJava expression.");
-				}
-				Expression eAst2 = parseExpression();
-				eAst = new BinaryExpr(expOp, eAst, eAst2, null);
-			}*/
 			
 			return eAst;
 		}
 		
-		private Expression binopExpression(Expression thisAst) 
+		private Expression parseExpression()
 		{
-			Expression eAst = thisAst;
-			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			Expression eAst = justExpression();
+			while (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp = new Operator(token, null);
 				parseBinop();
 				
-				if (expOp.kind == TokenKind.SUBTRACT)
-				{
-					if (token.kind == TokenKind.SUBTRACT)
-						parseError("Not a valid miniJava expression.");
-				}
-				
-//				else if (expOp.spelling == "||")
+//				if (expOp.kind == TokenKind.SUBTRACT)
 //				{
-//					Expression eAst2 = parseExpression();
-//					
-//					eAst = new BinaryExpr(expOp, eAst, eAst2, null);
+//					if (token.kind == TokenKind.SUBTRACT)
+//						parseError("Not a valid miniJava expression.");
 //				}
+				eAst = checkOperators(eAst, expOp, false);
 				
-				Expression eAst2 = parseExpression();
-				eAst = new BinaryExpr(expOp, eAst, eAst2, null);
+//				Expression eAst2 = parseExpression();
+//				eAst = new BinaryExpr(expOp, eAst, eAst2, null);
 			}
 			return eAst;
+		}
+		
+		private Expression checkOperators(Expression eAst, Operator expOp, boolean precedes)
+		{
+			if (expOp.spelling.equals("||"))
+				eAst = parseDisjunction(eAst, expOp, precedes);
+			else if (expOp.spelling.equals("&&"))
+				eAst = parseConjunction(eAst, expOp, precedes);
+			else if (expOp.spelling.equals("==") || expOp.spelling.equals("!="))
+				eAst = parseEquality(eAst, expOp, precedes);
+			else if (expOp.spelling.equals("<=") || expOp.spelling.equals("<") ||
+					expOp.spelling.equals(">") || expOp.spelling.equals(">="))
+				eAst = parseRelational(eAst, expOp, precedes);
+			else if (expOp.spelling.equals("+") || expOp.spelling.equals("-"))
+				eAst = parseAdditive(eAst, expOp, precedes);
+			else if (expOp.spelling.equals("*") || expOp.spelling.equals("/"))
+				eAst = parseMultiplicative(eAst, expOp, precedes);
+			else if (expOp.spelling.equals("-") || expOp.spelling.equals("!"))
+				eAst = parseUnary(eAst, expOp, precedes);
+			
+			return eAst;
+		}
+		
+		private Expression parseUnary(Expression eAst, Operator expOp,
+				boolean precedes)
+		{
+			Expression eAst2 = parseExpression();
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseBinop();
+				if (expOp2.spelling.equals("||") ||
+						expOp2.spelling.equals("&&") ||
+						expOp2.spelling.equals("==") ||
+						expOp2.spelling.equals("!=") ||
+						expOp2.spelling.equals("<=") ||
+						expOp2.spelling.equals("<") ||
+						expOp2.spelling.equals(">") ||
+						expOp2.spelling.equals(">=") ||
+						expOp2.spelling.equals("+") ||
+						expOp2.spelling.equals("-") ||
+						expOp2.spelling.equals("*") ||
+						expOp2.spelling.equals("/"))
+				{
+					precedes = true;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);
+				}
+				
+				else {
+					precedes = false;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);		
+				}
+			}
+			else
+				precedes = false;
+			if (precedes)
+			{
+				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
+						new BinaryExpr(expOp, eAst, ((BinaryExpr)eAst2).left, null), 
+						((BinaryExpr)eAst2).right, null);
+			}
+			else
+				eAst2 = new BinaryExpr(expOp, eAst, eAst2, null);
+			
+			return eAst2;
+		}
+		
+		private Expression parseMultiplicative(Expression eAst, Operator expOp,
+				boolean precedes)
+		{
+			Expression eAst2 = justExpression();
+			
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseBinop();
+				if (expOp2.spelling.equals("||") ||
+						expOp2.spelling.equals("&&") ||
+						expOp2.spelling.equals("==") ||
+						expOp2.spelling.equals("!=") ||
+						expOp2.spelling.equals("<=") ||
+						expOp2.spelling.equals("<") ||
+						expOp2.spelling.equals(">") ||
+						expOp2.spelling.equals(">=") ||
+						expOp2.spelling.equals("+") ||
+						expOp2.spelling.equals("-"))
+				{
+					precedes = true;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);
+				}
+				
+				else {
+					precedes = false;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);	
+
+				}
+			}
+			else
+				precedes = false;
+			if (precedes)
+			{
+				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
+						new BinaryExpr(expOp, eAst, ((BinaryExpr)eAst2).left, null), 
+						((BinaryExpr)eAst2).right, null);
+			}
+			else
+				eAst2 = new BinaryExpr(expOp, eAst, eAst2, null);
+
+			return eAst2;
+		}
+		
+		private Expression parseAdditive(Expression eAst, Operator expOp, 
+				boolean precedes)
+		{
+			Expression eAst2 = justExpression();
+
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseBinop();
+				if (expOp2.spelling.equals("||") ||
+						expOp2.spelling.equals("&&") ||
+						expOp2.spelling.equals("==") ||
+						expOp2.spelling.equals("!=") ||
+						expOp2.spelling.equals("<=") ||
+						expOp2.spelling.equals("<") ||
+						expOp2.spelling.equals(">") ||
+						expOp2.spelling.equals(">="))
+				{
+					precedes = true;
+					eAst2 = checkOperators(eAst2, expOp2, true);
+				}
+				
+				else {
+					precedes = false;
+					eAst2 = checkOperators(eAst2, expOp2, false);		
+				}
+			}
+			else
+				precedes = false;
+			if (precedes)
+			{
+				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
+						new BinaryExpr(expOp, eAst, ((BinaryExpr)eAst2).left, null), 
+						((BinaryExpr)eAst2).right, null);
+			}
+			else
+				eAst2 = new BinaryExpr(expOp, eAst, eAst2, null);
+
+			return eAst2;
+		}
+		
+		private Expression parseRelational(Expression eAst, Operator expOp,
+				boolean precedes)
+		{
+			Expression eAst2 = parseExpression();
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseBinop();
+				if (expOp2.spelling.equals("||") ||
+						expOp2.spelling.equals("&&") ||
+						expOp2.spelling.equals("==") ||
+						expOp2.spelling.equals("!="))
+				{
+					precedes = true;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);
+				}
+				
+				else {
+					precedes = false;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);		
+				}
+			}		
+			else
+				precedes = false;
+			if (precedes)
+			{
+				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
+						new BinaryExpr(expOp, eAst, ((BinaryExpr)eAst2).left, null), 
+						((BinaryExpr)eAst2).right, null);
+			}
+			else
+				eAst2 = new BinaryExpr(expOp, eAst, eAst2, null);
+			
+			return eAst2;
+		}
+		
+		private Expression parseEquality(Expression eAst, Operator expOp,
+				boolean precedes)
+		{
+			Expression eAst2 = parseExpression();
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseBinop();
+				if (expOp2.spelling.equals("||") ||
+						expOp2.spelling.equals("&&"))
+				{
+					precedes = true;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);
+				}
+				
+				else {
+					precedes = false;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);
+				}
+			}
+			
+			else
+				precedes = false;
+			if (precedes)
+			{
+				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
+						new BinaryExpr(expOp, eAst, ((BinaryExpr)eAst2).left, null), 
+						((BinaryExpr)eAst2).right, null);
+			}
+			else
+				eAst2 = new BinaryExpr(expOp, eAst, eAst2, null);
+			return eAst2;
+		}
+		
+		private Expression parseConjunction(Expression eAst, Operator expOp,
+				boolean precedes)
+		{
+			Expression eAst2 = parseExpression();
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseBinop();
+				if (expOp2.spelling.equals("||"))
+				{
+					precedes = true;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);
+				}
+				
+				else {
+					precedes = false;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);
+				}
+			}
+			else
+				precedes = false;
+			if (precedes)
+			{
+				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
+						new BinaryExpr(expOp, eAst, ((BinaryExpr)eAst2).left, null), 
+						((BinaryExpr)eAst2).right, null);
+			}
+			else
+				eAst2 = new BinaryExpr(expOp, eAst, eAst2, null);
+			
+			return eAst2;
+		}
+		
+		private Expression parseDisjunction(Expression eAst, Operator expOp,
+				boolean precedes)
+		{
+			Expression eAst2 = parseExpression();
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseBinop();
+				// if equals '||' keep it false
+				precedes = false;
+				eAst2 = checkOperators(eAst2, expOp2, precedes);
+				
+			}
+			else
+				precedes = false;
+			if (precedes)
+			{
+				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
+						new BinaryExpr(expOp, eAst, ((BinaryExpr)eAst2).left, null), 
+						((BinaryExpr)eAst2).right, null);
+			}
+			else
+				eAst2 = new BinaryExpr(expOp, eAst, eAst2, null);
+			
+			return eAst2;
 		}
 		
 		private ParameterDeclList parseParameterList()
 		{
 			ParameterDeclList pdlAst = new ParameterDeclList();
 			ParameterDecl pdAst = null;
-			
-			//TypeKind tk = parseType();
-			//BaseType bt = new BaseType(tk, null);
 			Type bt = parseType();
 			
 			String name = token.spelling;
@@ -1021,13 +1280,18 @@ import miniJava.AbstractSyntaxTrees.Package;
 		{
 			WhileStmt whileAst = null;
 			accept(TokenKind.WHILE_KW);
+			Statement stAst = null;
 			
 			parseLParen();
 			Expression eAst = parseExpression();
 			parseRParen();
-			Statement stAst = parseStatement();
-			whileAst = new WhileStmt(eAst, stAst, null);
+			StatementList stlAst = parseStatementList();
+			if (stlAst.size() > 1)
+				stAst = new BlockStmt(stlAst, null);
+			else
+				stAst = stlAst.get(0);
 			
+			whileAst = new WhileStmt(eAst, stAst, null);
 			return whileAst;
 		}
 		
@@ -1040,18 +1304,28 @@ import miniJava.AbstractSyntaxTrees.Package;
 		{
 			IfStmt ifAst = null;
 			accept(TokenKind.IF_KW);
+			Statement stAst1 = null;
+			Statement stAst2 = null;
 			
 			parseLParen();
 			Expression eAst = parseExpression();
 			parseRParen();
-			Statement stAst = parseStatement();
-			Statement stAst2 = null;
+			StatementList stlAst1 = parseStatementList();
+			
+			if (stlAst1.size() > 1)
+				stAst1 = new BlockStmt(stlAst1, null);
+			else
+				stAst1 = stlAst1.get(0);
 			if (token.kind == TokenKind.ELSE_KW)
 			{
 				parseElseKW();
-				stAst2 = parseStatement();
+				StatementList stlAst2 = parseStatementList();
+				if (stlAst2.size() > 1)
+					stAst2 = new BlockStmt(stlAst2, null);
+				else
+					stAst2 = stlAst2.get(0);
 			}
-			ifAst = new IfStmt(eAst, stAst, stAst2, null);
+			ifAst = new IfStmt(eAst, stAst1, stAst2, null);
 			return ifAst;
 		}
 		
