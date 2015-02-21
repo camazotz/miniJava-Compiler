@@ -630,24 +630,28 @@ import miniJava.AbstractSyntaxTrees.Package;
 					}
 				}
 				eAst = newAst;
+				eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.NUM)
 			{
 				LiteralExpr lexp = parseNum();
 				eAst = lexp;
+				eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.TRUE_KW)
 			{
 				LiteralExpr lexp = parseTrueKW();
 				eAst = lexp;
+				eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.FALSE_KW)
 			{
 				LiteralExpr lexp = parseFalseKW();
 				eAst = lexp;
+				eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.LPAREN)
@@ -655,6 +659,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 				parseLParen();
 				parseExpression();
 				parseRParen();
+				eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.SUBTRACT ||
@@ -671,10 +676,10 @@ import miniJava.AbstractSyntaxTrees.Package;
 					UnaryExpr uexp = new UnaryExpr(op, eAst2, null);
 					eAst = uexp;
 				}
+				eAst = binopExpression(eAst);
 			}
 			
-			else if (token.kind == TokenKind.THIS_KW ||
-					token.kind == TokenKind.ID)
+			else  //if (token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID)
 			{
 				Reference refAst = null;
 				
@@ -684,7 +689,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 					refAst = new ThisRef(null);
 				}
 				
-				else if (token.kind == TokenKind.ID)
+				else //if (token.kind == TokenKind.ID)
 				{
 					Identifier someId = new Identifier(token, null);
 					parseId();
@@ -739,10 +744,11 @@ import miniJava.AbstractSyntaxTrees.Package;
 				{
 					RefExpr rexp = new RefExpr(refAst, null);
 					eAst = rexp;
+					eAst = binopExpression(eAst);
 				}
 			}
 			
-			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			/*if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp = new Operator(token, null);
 				parseBinop();
@@ -753,8 +759,35 @@ import miniJava.AbstractSyntaxTrees.Package;
 				}
 				Expression eAst2 = parseExpression();
 				eAst = new BinaryExpr(expOp, eAst, eAst2, null);
-			}
+			}*/
 			
+			return eAst;
+		}
+		
+		private Expression binopExpression(Expression thisAst) 
+		{
+			Expression eAst = thisAst;
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp = new Operator(token, null);
+				parseBinop();
+				
+				if (expOp.kind == TokenKind.SUBTRACT)
+				{
+					if (token.kind == TokenKind.SUBTRACT)
+						parseError("Not a valid miniJava expression.");
+				}
+				
+//				else if (expOp.spelling == "||")
+//				{
+//					Expression eAst2 = parseExpression();
+//					
+//					eAst = new BinaryExpr(expOp, eAst, eAst2, null);
+//				}
+				
+				Expression eAst2 = parseExpression();
+				eAst = new BinaryExpr(expOp, eAst, eAst2, null);
+			}
 			return eAst;
 		}
 		
@@ -763,8 +796,9 @@ import miniJava.AbstractSyntaxTrees.Package;
 			ParameterDeclList pdlAst = new ParameterDeclList();
 			ParameterDecl pdAst = null;
 			
-			TypeKind tk = parseType();
-			BaseType bt = new BaseType(tk, null);
+			//TypeKind tk = parseType();
+			//BaseType bt = new BaseType(tk, null);
+			Type bt = parseType();
 			
 			String name = token.spelling;
 			parseId();
@@ -778,8 +812,9 @@ import miniJava.AbstractSyntaxTrees.Package;
 				if (token.kind == TokenKind.COMMA)
 				{
 					parseComma();
-					TypeKind tk2 = parseType();
-					BaseType bt2 = new BaseType(tk2, null);
+					//TypeKind tk2 = parseType();
+					//BaseType bt2 = new BaseType(tk2, null);
+					Type bt2 = parseType();
 					String name2 = token.spelling;
 					parseId();
 					pd2Ast = new ParameterDecl(bt2, name2, null);
@@ -797,7 +832,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 			MemberDecl md = null;
 			boolean isPrivate = false, isStatic = false;
 			
-			BaseType memType = null;
+			Type memType = null;
 			String name = null;
 			
 			if (token.kind == TokenKind.PUBLIC_KW)
@@ -826,8 +861,9 @@ import miniJava.AbstractSyntaxTrees.Package;
 			
 			else
 			{
-				TypeKind type = parseType();
-				memType = new BaseType(type, null);
+				//TypeKind type = parseType();
+				//memType = new BaseType(type, null);
+				memType = parseType();
 			}
 			
 			name = token.spelling;
@@ -837,43 +873,48 @@ import miniJava.AbstractSyntaxTrees.Package;
 			return md;
 		}
 		
-		private TypeKind parseType()
+		private Type parseType()
 		{
+			Type typeReturned = null;
 			if (token.kind == TokenKind.BOOLEAN_KW)
 			{
 				parseBooleanKW();
-				return TypeKind.BOOLEAN;
+				typeReturned = new BaseType(TypeKind.BOOLEAN, null);
+				return typeReturned;
 			}
 			
 			else if (token.kind == TokenKind.INT_KW)
 			{
 				parseIntKW();
+				typeReturned = new BaseType(TypeKind.INT, null);
 				if (token.kind == TokenKind.LBRACKET)
 				{
 					parseLBracket();
 					parseRBracket();
-					return TypeKind.ARRAY;
+					typeReturned = new ArrayType(typeReturned, null);
 				}
-				return TypeKind.INT;
+				return typeReturned;
 			}
 			
 			else
 			{
+				Identifier id = new Identifier(token, null);
 				parseId();
+				typeReturned = new ClassType(id, null);
 				if (token.kind == TokenKind.LBRACKET)
 				{
 					parseLBracket();
 					parseRBracket();
-					return TypeKind.ARRAY;
+					typeReturned = new ArrayType(typeReturned, null);
 				}
-				return TypeKind.CLASS;
+				return typeReturned;
 			}
 		}
 		
 		private void parseLineComment()
 		{
 			//accept(TokenKind.LINE_COMMENT);
-			while (token.kind != TokenKind.EOL && token.kind != TokenKind.EOT)
+			while (token.kind != TokenKind.EOL)
 				token = scanner.scan();
 			System.out.println(token.kind);
 		//	accept(TokenKind.EOL);
@@ -890,15 +931,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 			
 			System.out.println(token.kind);
 			
-			if (token.kind == TokenKind.EOT)
-				accept(TokenKind.EOT);
-			
-			//accept(TokenKind.BLOCK_COMMENT_CLOSE);
-			else
-			{
-				token = scanner.scan();
-				System.out.println(token.kind);
-			}
+			accept(TokenKind.BLOCK_COMMENT_CLOSE);
 		}
 		
 		private void parseComma()
