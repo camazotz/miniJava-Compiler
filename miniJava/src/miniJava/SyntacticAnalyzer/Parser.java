@@ -126,7 +126,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 					// Method Declaration
 					else
 					{
-						ParameterDeclList pdlAst = null;
+						ParameterDeclList pdlAst = new ParameterDeclList();
 						StatementList stlAst = new StatementList();
 						Expression returnExp = null;
 						parseLParen();
@@ -143,8 +143,13 @@ import miniJava.AbstractSyntaxTrees.Package;
 						}
 						
 						parseLBrace();
-						
-						stlAst = parseStatementList();
+						while (token.kind == TokenKind.IF_KW || token.kind == TokenKind.WHILE_KW ||
+								token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID ||
+								token.kind == TokenKind.INT_KW || token.kind == TokenKind.BOOLEAN_KW ||
+								token.kind == TokenKind.LBRACE)
+						{
+							stlAst = parseStatementList(stlAst);
+						}
 						
 						if (token.kind == TokenKind.RETURN_KW)
 						{
@@ -168,15 +173,15 @@ import miniJava.AbstractSyntaxTrees.Package;
 			return clAst;
 		}
 		
-		private StatementList parseStatementList()
+		private StatementList parseStatementList(StatementList oldList)
 		{
-			StatementList stlAst = new StatementList();		
+			StatementList stlAst = oldList;		
 			Statement stAst = null;
-			while (token.kind == TokenKind.IF_KW || token.kind == TokenKind.WHILE_KW ||
-				token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID ||
-				token.kind == TokenKind.INT_KW || token.kind == TokenKind.BOOLEAN_KW ||
-				token.kind == TokenKind.LBRACE)
-			{
+//			while (token.kind == TokenKind.IF_KW || token.kind == TokenKind.WHILE_KW ||
+//				token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID ||
+//				token.kind == TokenKind.INT_KW || token.kind == TokenKind.BOOLEAN_KW ||
+//				token.kind == TokenKind.LBRACE)
+//			{
 				if (token.kind == TokenKind.LBRACE)
 				{
 					parseLBrace();		
@@ -192,8 +197,9 @@ import miniJava.AbstractSyntaxTrees.Package;
 				else {
 					stAst = parseStatement();
 					stlAst.add(stAst);
+					//return stlAst;
 				}
-			}
+			//}
 			return stlAst;
 		}
 		
@@ -1307,12 +1313,12 @@ import miniJava.AbstractSyntaxTrees.Package;
 			parseLParen();
 			Expression eAst = parseExpression();
 			parseRParen();
-			StatementList stlAst = parseStatementList();
-			if (stlAst.size() > 1)
-				stAst = new BlockStmt(stlAst, null);
-			else
+			StatementList stlAst = parseStatementList(new StatementList());
+			if (stlAst.size() == 1)
 				stAst = stlAst.get(0);
-			
+			else
+				stAst = new BlockStmt(stlAst, null);
+				
 			whileAst = new WhileStmt(eAst, stAst, null);
 			return whileAst;
 		}
@@ -1332,20 +1338,21 @@ import miniJava.AbstractSyntaxTrees.Package;
 			parseLParen();
 			Expression eAst = parseExpression();
 			parseRParen();
-			StatementList stlAst1 = parseStatementList();
+			StatementList stlAst1 = parseStatementList(new StatementList());
 			
-			if (stlAst1.size() > 1)
-				stAst1 = new BlockStmt(stlAst1, null);
-			else
+			if (stlAst1.size() == 1)
 				stAst1 = stlAst1.get(0);
+			else
+				stAst1 = new BlockStmt(stlAst1, null);
+			
 			if (token.kind == TokenKind.ELSE_KW)
 			{
 				parseElseKW();
-				StatementList stlAst2 = parseStatementList();
-				if (stlAst2.size() > 1)
-					stAst2 = new BlockStmt(stlAst2, null);
-				else
+				StatementList stlAst2 = parseStatementList(new StatementList());
+				if (stlAst2.size() == 1)
 					stAst2 = stlAst2.get(0);
+				else
+					stAst2 = new BlockStmt(stlAst2, null);
 			}
 			ifAst = new IfStmt(eAst, stAst1, stAst2, null);
 			return ifAst;
