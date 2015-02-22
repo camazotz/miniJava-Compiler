@@ -795,10 +795,30 @@ import miniJava.AbstractSyntaxTrees.Package;
 			return eAst;
 		}
 		
+		private Expression checkUnary()
+		{
+			Expression eAst = null;
+			if (token.kind == TokenKind.UNOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseUnop();
+				eAst = justExpression();
+				boolean precedes = false;
+				if (!expOp2.spelling.equals("-"))
+					eAst = checkOperators(eAst, expOp2, precedes);
+				else
+					eAst = parseUnary(eAst, expOp2, precedes);
+			}
+			else
+				eAst = justExpression();
+			return eAst;
+		}
+		
 		private Expression parseUnary(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = parseExpression();
+			Expression eAst2 = eAst;
+			boolean isBinary = false;
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
@@ -817,24 +837,24 @@ import miniJava.AbstractSyntaxTrees.Package;
 						expOp2.spelling.equals("/"))
 				{
 					precedes = true;
+					isBinary = true;
 					eAst2 = checkOperators(eAst2, expOp2, precedes);
 				}
 				
 				else {
-					precedes = false;
-					eAst2 = checkOperators(eAst2, expOp2, precedes);		
+					parseError("Not a valid miniJava expression.");
 				}
 			}
 			else
-				precedes = false;
-			if (precedes)
+				precedes = true;
+			if (isBinary)
 			{
 				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
-						new BinaryExpr(expOp, eAst, ((BinaryExpr)eAst2).left, null), 
+						new UnaryExpr(expOp, ((BinaryExpr)eAst2).left, null), 
 						((BinaryExpr)eAst2).right, null);
 			}
 			else
-				eAst2 = new BinaryExpr(expOp, eAst, eAst2, null);
+				eAst2 = new UnaryExpr(expOp, eAst2, null);
 			
 			return eAst2;
 		}
@@ -842,7 +862,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseMultiplicative(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = justExpression();
+			Expression eAst2 = checkUnary();
 			
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
@@ -886,7 +906,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseAdditive(Expression eAst, Operator expOp, 
 				boolean precedes)
 		{
-			Expression eAst2 = justExpression();
+			Expression eAst2 = checkUnary();
 
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
@@ -912,6 +932,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 			}
 			else
 				precedes = false;
+			
 			if (precedes)
 			{
 				eAst2 = new BinaryExpr(((BinaryExpr)eAst2).operator, 
@@ -927,7 +948,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseRelational(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = parseExpression();
+			Expression eAst2 = checkUnary();
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
@@ -963,7 +984,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseEquality(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = parseExpression();
+			Expression eAst2 = checkUnary();
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
@@ -997,7 +1018,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseConjunction(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = parseExpression();
+			Expression eAst2 = checkUnary();
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
@@ -1030,7 +1051,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseDisjunction(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = parseExpression();
+			Expression eAst2 = checkUnary();
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
