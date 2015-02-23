@@ -631,36 +631,29 @@ import miniJava.AbstractSyntaxTrees.Package;
 					}
 				}
 				eAst = newAst;
-				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.NUM)
 			{
 				LiteralExpr lexp = parseNum();
 				eAst = lexp;
-				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.TRUE_KW)
 			{
 				LiteralExpr lexp = parseTrueKW();
 				eAst = lexp;
-				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.FALSE_KW)
 			{
 				LiteralExpr lexp = parseFalseKW();
 				eAst = lexp;
-				//eAst = binopExpression(eAst);
 			}
 			
 			else if (token.kind == TokenKind.LPAREN)
 			{
-				parseLParen();
-				eAst = parseExpression();
-				parseRParen();
-				//eAst = binopExpression(eAst);
+				eAst = parseParentheses();
 			}
 			
 			else if (token.kind == TokenKind.SUBTRACT ||
@@ -677,7 +670,6 @@ import miniJava.AbstractSyntaxTrees.Package;
 					UnaryExpr uexp = new UnaryExpr(op, eAst2, null);
 					eAst = uexp;
 				}
-				//eAst = binopExpression(eAst);
 			}
 			
 			else  //if (token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID)
@@ -747,13 +739,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 					RefExpr rexp = new RefExpr(refAst, null);
 					eAst = rexp;
 				}
-				/*else if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT
-						|| token.kind == TokenKind.SEMICOLON)
-				{
-					RefExpr rexp = new RefExpr(refAst, null);
-					eAst = rexp;
-					//eAst = binopExpression(eAst);
-				}*/
+
 			}
 			
 			return eAst;
@@ -765,17 +751,8 @@ import miniJava.AbstractSyntaxTrees.Package;
 			while (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp = new Operator(token, null);
-				parseBinop();
-				
-//				if (expOp.kind == TokenKind.SUBTRACT)
-//				{
-//					if (token.kind == TokenKind.SUBTRACT)
-//						parseError("Not a valid miniJava expression.");
-//				}
+				parseBinop();			
 				eAst = checkOperators(eAst, expOp, false);
-				
-//				Expression eAst2 = parseExpression();
-//				eAst = new BinaryExpr(expOp, eAst, eAst2, null);
 			}
 			return eAst;
 		}
@@ -797,7 +774,8 @@ import miniJava.AbstractSyntaxTrees.Package;
 				eAst = parseMultiplicative(eAst, expOp, precedes);
 			else if (expOp.spelling.equals("-") || expOp.spelling.equals("!"))
 				eAst = parseUnary(eAst, expOp, precedes);
-			
+			else if ((expOp.spelling).equals("("))
+				eAst = parseParentheses();
 			return eAst;
 		}
 		
@@ -819,13 +797,59 @@ import miniJava.AbstractSyntaxTrees.Package;
 				eAst = justExpression();
 			return eAst;
 		}
+
+		private Expression parseParentheses()
+		{
+			parseLParen();
+			Expression eAst2 = null;
+			if (token.kind == TokenKind.LPAREN)
+				eAst2 = parseParentheses();
+			else
+				eAst2 = checkUnary();
+			boolean precedes = true;
+			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			{
+				Operator expOp2 = new Operator(token, null);
+				parseBinop();
+				if (expOp2.spelling.equals("||") ||
+						expOp2.spelling.equals("&&") ||
+						expOp2.spelling.equals("==") ||
+						expOp2.spelling.equals("!=") ||
+						expOp2.spelling.equals("<=") ||
+						expOp2.spelling.equals("<") ||
+						expOp2.spelling.equals(">") ||
+						expOp2.spelling.equals(">=") ||
+						expOp2.spelling.equals("+") ||
+						expOp2.spelling.equals("-") ||
+						expOp2.spelling.equals("*") ||
+						expOp2.spelling.equals("/"))
+				{
+					precedes = true;
+					eAst2 = checkOperators(eAst2, expOp2, precedes);
+				}
+				
+				else
+					parseError("Not a valid miniJava expression.");
+			}
+			parseRParen();
+			return eAst2;
+		}
 		
 		private Expression parseUnary(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
 			Expression eAst2 = eAst;
 			boolean isBinary = false;
-			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
+			
+			if (token.kind == TokenKind.LPAREN)
+			{
+				isBinary = false;
+				precedes = false;
+				Operator expOp2 = new Operator(token, null);
+				eAst2 = checkOperators(eAst2, expOp2, precedes);
+			}
+			
+			else if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
 				parseBinop();
@@ -846,10 +870,9 @@ import miniJava.AbstractSyntaxTrees.Package;
 					isBinary = true;
 					eAst2 = checkOperators(eAst2, expOp2, precedes);
 				}
-				
-				else {
+
+				else
 					parseError("Not a valid miniJava expression.");
-				}
 			}
 			else
 				precedes = true;
@@ -868,7 +891,17 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseMultiplicative(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = checkUnary();
+			Expression eAst2 = null;
+			
+			if (token.kind == TokenKind.LPAREN)
+			{
+				precedes = false;
+				Operator expOp2 = new Operator(token, null);
+				eAst2 = checkOperators(null, expOp2, precedes);
+			}
+			
+			else
+				eAst2 = checkUnary();
 			
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
@@ -912,7 +945,17 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseAdditive(Expression eAst, Operator expOp, 
 				boolean precedes)
 		{
-			Expression eAst2 = checkUnary();
+			Expression eAst2 = null;
+			
+			if (token.kind == TokenKind.LPAREN)
+			{
+				precedes = false;
+				Operator expOp2 = new Operator(token, null);
+				eAst2 = checkOperators(null, expOp2, precedes);
+			}
+			
+			else
+				eAst2 = checkUnary();
 
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
@@ -954,7 +997,18 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseRelational(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = checkUnary();
+			Expression eAst2 = null;
+			
+			if (token.kind == TokenKind.LPAREN)
+			{
+				precedes = false;
+				Operator expOp2 = new Operator(token, null);
+				eAst2 = checkOperators(null, expOp2, precedes);
+			}
+			
+			else
+				eAst2 = checkUnary();
+			
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
@@ -990,7 +1044,18 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseEquality(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = checkUnary();
+			Expression eAst2 = null;
+			
+			if (token.kind == TokenKind.LPAREN)
+			{
+				precedes = false;
+				Operator expOp2 = new Operator(token, null);
+				eAst2 = checkOperators(null, expOp2, precedes);
+			}
+			
+			else
+				eAst2 = checkUnary();
+			
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
@@ -1024,7 +1089,18 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseConjunction(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = checkUnary();
+			Expression eAst2 = null;
+			
+			if (token.kind == TokenKind.LPAREN)
+			{
+				precedes = false;
+				Operator expOp2 = new Operator(token, null);
+				eAst2 = checkOperators(null, expOp2, precedes);
+			}
+			
+			else
+				eAst2 = checkUnary();
+			
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
@@ -1057,7 +1133,18 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private Expression parseDisjunction(Expression eAst, Operator expOp,
 				boolean precedes)
 		{
-			Expression eAst2 = checkUnary();
+			Expression eAst2 = null;
+			
+			if (token.kind == TokenKind.LPAREN)
+			{
+				precedes = false;
+				Operator expOp2 = new Operator(token, null);
+				eAst2 = checkOperators(null, expOp2, precedes);
+			}
+			
+			else
+				eAst2 = checkUnary();
+			
 			if (token.kind == TokenKind.BINOP || token.kind == TokenKind.SUBTRACT)
 			{
 				Operator expOp2 = new Operator(token, null);
