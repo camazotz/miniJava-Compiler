@@ -321,7 +321,7 @@ public class Scanner{
 			return TokenKind.ID;
 		}
 		
-		else if (currentChar == '\u0000')
+		else if (currentChar == '\u0003')
 		{
 			return(TokenKind.EOT);
 		}
@@ -357,10 +357,10 @@ public class Scanner{
 
 	/**
 	 * advance to next char in inputstream
-	 * detect end of line or end of file and substitute '$' as distinguished eot terminal
+	 * detect end of line or end of file and substitute '\u0003' as distinguished eot terminal
 	 */
 	private void nextChar() {
-		if (currentChar != '\u0000')
+		if (currentChar != '\u0003')
 			readChar();
 	}
 
@@ -371,18 +371,18 @@ public class Scanner{
 			
 			if (inputStream == System.in && inputStream.available() == 0)
 			{
-				currentChar = '\u0000';
+				currentChar = '\u0003';
 			}
 			
 			else if (c == -1) {// || inputStream.available() == 0) { // || currentChar == eolUnix || currentChar == eolWindows) {
-				currentChar = '\u0000';
+				currentChar = '\u0003';
 			}
-			else if (currentChar == '\u0000') {
-				scanError("Illegal character '$' in input");
+			else if (currentChar == '\u0003') {
+				scanError("Illegal character '\u0003' in input");
 			}
 		} catch (IOException e) {
 			scanError("I/O Exception!");
-			currentChar = '\u0000';
+			currentChar = '\u0003';
 		}
 	}
 }
