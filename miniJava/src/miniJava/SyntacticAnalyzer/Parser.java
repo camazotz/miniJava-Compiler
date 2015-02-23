@@ -59,7 +59,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 				}
 			}
 			
-			System.out.println(token.kind);
+			//System.out.println(token.kind);
 			try {
 				parseProgram();
 			}
@@ -1288,9 +1288,9 @@ import miniJava.AbstractSyntaxTrees.Package;
 		private void parseLineComment()
 		{
 			//accept(TokenKind.LINE_COMMENT);
-			while (token.kind != TokenKind.EOL)
+			while (token.kind != TokenKind.EOL && token.kind != TokenKind.EOT)
 				token = scanner.scan();
-			System.out.println(token.kind);
+			//System.out.println(token.kind);
 		//	accept(TokenKind.EOL);
 		}
 		
@@ -1303,7 +1303,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 				token = scanner.scan();
 			}
 			
-			System.out.println(token.kind);
+			//System.out.println(token.kind);
 			
 			accept(TokenKind.BLOCK_COMMENT_CLOSE);
 		}
@@ -1531,7 +1531,7 @@ import miniJava.AbstractSyntaxTrees.Package;
 					pTrace();
 				
 				token = scanner.scan();
-				System.out.println(token.kind);
+				//System.out.println(token.kind);
 				
 				while (token.kind == TokenKind.EOL || token.kind == TokenKind.LINE_COMMENT
 						|| token.kind == TokenKind.BLOCK_COMMENT_OPEN)

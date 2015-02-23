@@ -369,7 +369,12 @@ public class Scanner{
 			int c = inputStream.read();
 			currentChar = (char) c;
 			
-			if (c == -1 || inputStream.available() == 0) { // || currentChar == eolUnix || currentChar == eolWindows) {
+			if (inputStream == System.in && inputStream.available() == 0)
+			{
+				currentChar = '\u0000';
+			}
+			
+			else if (c == -1) {// || inputStream.available() == 0) { // || currentChar == eolUnix || currentChar == eolWindows) {
 				currentChar = '\u0000';
 			}
 			else if (currentChar == '\u0000') {
