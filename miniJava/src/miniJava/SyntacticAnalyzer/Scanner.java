@@ -33,91 +33,93 @@ public class Scanner{
 		// collect spelling and identify token kind
 		currentSpelling = new StringBuilder();
 		
-		TokenKind kind = scanToken();
+		TokenKind kind = null;
+		while (kind == null || kind == TokenKind.NULL) 
+			kind = scanToken();
 
 		// return new token
 		return new Token(kind, currentSpelling.toString());
 	}
-
+	
+	public Token scanForWhitespace() {
+		currentSpelling = new StringBuilder();
+		currentSpelling.append(currentChar);
+		if (currentChar == ' ' || currentChar == '\t')
+			return new Token(TokenKind.WHITESPACE, currentSpelling.toString());
+		else
+			return scan();
+	}
+	
 	public TokenKind scanToken() {
 		
-		if (currentChar == '{')
-		{
+		if (currentChar == '{') {
 			takeIt();
 			return(TokenKind.LBRACE);
 		}
 		
-		else if (currentChar == '\n' || currentChar == '\r')
-		{
+		else if (currentChar == '\n' || currentChar == '\r' ||
+				currentChar == '\t' || currentChar == ' ') {
 			nextChar();
-			return(TokenKind.EOL);
+			return(TokenKind.NULL);
 		}
 		
-		else if (currentChar == '}')
-		{
+		else if (currentChar == '}') {
 			takeIt();
 			return(TokenKind.RBRACE);
 		}
 		
-		else if (currentChar == '[')
-		{
+		else if (currentChar == '[') {
 			takeIt();
 			return(TokenKind.LBRACKET);
 		}
 		
-		else if (currentChar == ']')
-		{
+		else if (currentChar == ']') {
 			takeIt();
 			return(TokenKind.RBRACKET);
 		}
 		
-		else if (currentChar == '(')
-		{
+		else if (currentChar == '(') {
 			takeIt();
 			return(TokenKind.LPAREN);
 		}
 		
-		else if (currentChar == ')')
-		{
+		else if (currentChar == ')') {
 			takeIt();
 			return(TokenKind.RPAREN);
 		}
 		
-		else if (currentChar == ';')
-		{
+		else if (currentChar == ';') {
 			takeIt();
 			return(TokenKind.SEMICOLON);
 		}
 		
-		else if (currentChar == '+')
-		{
+		else if (currentChar == '+') {
 			takeIt();
 			return(TokenKind.BINOP);
 		}
 		
-		else if (currentChar == '-')
-		{
+		else if (currentChar == '-') {
 			takeIt();
+			if (currentChar == '-') {
+				scanError("Illegal character in input");
+				return(TokenKind.ERROR);
+			}
 			return(TokenKind.SUBTRACT);
 		}
 		
-		else if (currentChar == '.')
-		{
+		else if (currentChar == '.') {
 			takeIt();
 			return(TokenKind.PERIOD);
 		}
 		
-		else if (currentChar == ',')
-		{
+		else if (currentChar == ',') {
 			takeIt();
 			return(TokenKind.COMMA);
 		}
 		
-		else if (currentChar == '!')
-		{
+		else if (currentChar == '!') {
 			takeIt();
-			if (currentChar == '=')
-			{
+			if (currentChar == '=') {
 				takeIt();
 				return(TokenKind.BINOP);
 			}
@@ -125,53 +127,43 @@ public class Scanner{
 			return(TokenKind.UNOP);
 		}
 		
-		else if (currentChar == '=')
-		{
+		else if (currentChar == '=') {
 			takeIt();
-			if (currentChar == '=')
-			{
+			if (currentChar == '=') {
 				takeIt();
 				return(TokenKind.BINOP);
 			}
 			return(TokenKind.EQUALS);
 		}
 		
-		else if (currentChar == '>')
-		{
+		else if (currentChar == '>') {
 			takeIt();
-			if (currentChar == '=')
-			{
+			if (currentChar == '=') {
 				takeIt();
 			}
 			return(TokenKind.BINOP);
 		}
 		
-		else if (currentChar == '<')
-		{
+		else if (currentChar == '<') {
 			takeIt();
-			if (currentChar == '=')
-			{
+			if (currentChar == '=') {
 				takeIt();
 			}
 			return(TokenKind.BINOP);
 		}
 		
-		else if (currentChar == '|')
-		{
+		else if (currentChar == '|') {
 			takeIt();
-			if (currentChar == '|')
-			{
+			if (currentChar == '|') {
 				takeIt();
 				return TokenKind.BINOP;
 			}
 			System.out.println("There is no second |");
 		}
 		
-		else if (currentChar == '&')
-		{
+		else if (currentChar == '&') {
 			takeIt();
-			if (currentChar == '&')
-			{
+			if (currentChar == '&') {
 				takeIt();
 				return TokenKind.BINOP;
 			}
@@ -179,142 +171,116 @@ public class Scanner{
 			System.out.println("There is no second &");
 		}
 		
-		else if (currentChar == '>')
-		{
+		else if (currentChar == '>') {
 			takeIt();
 			return(TokenKind.BINOP);
 		}
 		
-		else if (currentChar == '<')
-		{
+		else if (currentChar == '<') {
 			takeIt();
 			return(TokenKind.BINOP);
 		}
 		
-		else if (currentChar == '/')
-		{
+		else if (currentChar == '/') {
 			takeIt();
-			if (currentChar == '/')
-			{
+			if (currentChar == '/') {
 				takeIt();
-				return(TokenKind.LINE_COMMENT);
+				scanUntilNewline();
+				return(TokenKind.NULL);
 			}
 			
-			else if (currentChar == '*')
-			{
+			else if (currentChar == '*') {
 				takeIt();
-				return(TokenKind.BLOCK_COMMENT_OPEN);
+				scanUntilCloseBlockComment();
+				return(TokenKind.NULL);
 			}
 			
-			else
-			{
+			else {
 				return(TokenKind.BINOP);
 			}
 		}
 		
-		else if (currentChar == '*')
-		{
+		else if (currentChar == '*') {
 			takeIt();
-			if (currentChar == '/')
-			{
+			if (currentChar == '/') {
 				takeIt();
 				return(TokenKind.BLOCK_COMMENT_CLOSE);
 			}
 			
-			else
-			{
+			else {
 				return TokenKind.BINOP;
 			}
 		}
 		
-		else if (Character.toString(currentChar).matches("[0-9]"))
-		{
-			while (Character.toString(currentChar).matches("[0-9]"))
-			{
+		else if (Character.toString(currentChar).matches("[0-9]")) {
+			while (Character.toString(currentChar).matches("[0-9]")) {
 				takeIt();
 			}
 			return(TokenKind.NUM);
 		}
 		
-		else if (Character.toString(currentChar).matches("^[a-zA-Z]"))
-		{
-			while (Character.toString(currentChar).matches("^[a-zA-Z0-9_]"))
-			{
+		else if (Character.toString(currentChar).matches("^[a-zA-Z]")) {
+			while (Character.toString(currentChar).matches("^[a-zA-Z0-9_]")) {
 				takeIt();
 			}
 			
-			if (currentSpelling.toString().equals("class"))
-			{
+			if (currentSpelling.toString().equals("class")) {
 				return TokenKind.CLASS_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("public"))
-			{
+			else if (currentSpelling.toString().equals("public")) {
 				return TokenKind.PUBLIC_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("private"))
-			{
+			else if (currentSpelling.toString().equals("private")) {
 				return TokenKind.PRIVATE_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("static"))
-			{
+			else if (currentSpelling.toString().equals("static")) {
 				return TokenKind.STATIC_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("void"))
-			{
+			else if (currentSpelling.toString().equals("void")) {
 				return TokenKind.VOID_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("return"))
-			{
+			else if (currentSpelling.toString().equals("return")) {
 				return TokenKind.RETURN_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("this"))
-			{
+			else if (currentSpelling.toString().equals("this")) {
 				return TokenKind.THIS_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("if"))
-			{
+			else if (currentSpelling.toString().equals("if")) {
 				return TokenKind.IF_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("else"))
-			{
+			else if (currentSpelling.toString().equals("else")) {
 				return TokenKind.ELSE_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("while"))
-			{
+			else if (currentSpelling.toString().equals("while")) {
 				return TokenKind.WHILE_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("new"))
-			{
+			else if (currentSpelling.toString().equals("new")) {
 				return TokenKind.NEW_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("true"))
-			{
+			else if (currentSpelling.toString().equals("true")) {
 				return TokenKind.TRUE_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("false"))
-			{
+			else if (currentSpelling.toString().equals("false")) {
 				return TokenKind.FALSE_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("boolean"))
-			{
+			else if (currentSpelling.toString().equals("boolean")) {
 				return TokenKind.BOOLEAN_KW;
 			}
 			
-			else if (currentSpelling.toString().equals("int"))
-			{
+			else if (currentSpelling.toString().equals("int")) {
 				return TokenKind.INT_KW;
 			}
 
@@ -328,6 +294,7 @@ public class Scanner{
 		
 		else
 		{
+			System.out.println();
 			nextChar();
 			return(TokenKind.ERROR);
 		}
@@ -364,7 +331,7 @@ public class Scanner{
 			readChar();
 	}
 
-	private void readChar() {
+	private char readChar() {
 		try {
 			int c = inputStream.read();
 			currentChar = (char) c;
@@ -384,6 +351,52 @@ public class Scanner{
 			scanError("I/O Exception!");
 			currentChar = '\u0003';
 		}
+		return currentChar;
+	}
+	
+	public Token lookAhead(int numBytes) throws IOException {
+		inputStream.mark(16);
+		char tmp1 = currentChar;
+		int i = 0;
+		Token tmp = null;
+		while (i < numBytes) {
+			tmp = scan();
+			i++;
+		}
+		currentChar = tmp1;
+		inputStream.reset();
+		return tmp;
+	}
+	
+	// Handle Line Comments
+	private void scanUntilNewline() {
+		while (currentChar != '\n' && currentChar != '\r' && 
+				currentChar != '\u0003')
+			skipIt();
+
+		if (currentChar == '\n' || currentChar == '\r') {
+			skipIt();
+			currentSpelling = new StringBuilder();
+			return;
+		}
+	}
+	
+	// Handle Block Comments
+	private void scanUntilCloseBlockComment() {
+		while (currentChar != '\u0003') {
+			if (currentChar == '*') {
+				skipIt();
+				if (currentChar == '/') {
+					skipIt();
+					currentSpelling = new StringBuilder();
+					return;
+				}
+			}
+			else
+				skipIt();
+		}
+		
+		scanError("Did not find a closing block comment");
 	}
 }
 
