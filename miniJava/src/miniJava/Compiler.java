@@ -20,9 +20,13 @@ import miniJava.SyntacticAnalyzer.Scanner;
 
 
 
+
+
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.InputStream;
 
 /**
@@ -39,15 +43,16 @@ public class Compiler {
 	 */
 	public static void main(String[] args) {
 
-		InputStream inputStream = null;
+		BufferedReader inputStream = null;
 		if (args.length == 0) {
-			System.out.println("Enter Expression");
-			inputStream = System.in;
+			System.exit(4);
+			//System.out.println("Enter Expression");
+			//inputStream = System.in;
 		}
 		else {
 			try {
 				java.io.File sourceFile = new java.io.File(args[0]);
-				inputStream = new FileInputStream(sourceFile);
+				inputStream = new BufferedReader(new FileReader(sourceFile));
 			} catch (FileNotFoundException e) {
 				System.out.println("Input file " + args[0] + " not found");
 				System.exit(1);

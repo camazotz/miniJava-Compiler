@@ -6,13 +6,13 @@ import miniJava.ErrorReporter;
 
 public class Scanner{
 
-	private InputStream inputStream;
+	private BufferedReader inputStream;
 	private ErrorReporter reporter;
 
 	private char currentChar;
 	private StringBuilder currentSpelling;
 
-	public Scanner(InputStream inputStream, ErrorReporter reporter) {
+	public Scanner(BufferedReader inputStream, ErrorReporter reporter) {
 		this.inputStream = inputStream;
 		this.reporter = reporter;
 
@@ -21,7 +21,7 @@ public class Scanner{
 	}
 
 	/**
-	 * skip whitespace and scan next token
+	 * skip whitespace and tabs and scan next token
 	 * @return token
 	 */
 	public Token scan() {
@@ -334,19 +334,12 @@ public class Scanner{
 	private char readChar() {
 		try {
 			int c = inputStream.read();
-			currentChar = (char) c;
 			
-			if (inputStream == System.in && inputStream.available() == 0)
-			{
+			if (c == -1)
 				currentChar = '\u0003';
-			}
+			else 
+				currentChar = (char) c;
 			
-			else if (c == -1) {// || inputStream.available() == 0) { // || currentChar == eolUnix || currentChar == eolWindows) {
-				currentChar = '\u0003';
-			}
-			else if (currentChar == '\u0003') {
-				scanError("Illegal character '\u0003' in input");
-			}
 		} catch (IOException e) {
 			scanError("I/O Exception!");
 			currentChar = '\u0003';
@@ -354,6 +347,7 @@ public class Scanner{
 		return currentChar;
 	}
 	
+	// Looks ahead in input stream and resets
 	public Token lookAhead(int numBytes) throws IOException {
 		inputStream.mark(16);
 		char tmp1 = currentChar;
