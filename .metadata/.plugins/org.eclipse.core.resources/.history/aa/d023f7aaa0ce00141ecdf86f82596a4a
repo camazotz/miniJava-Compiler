@@ -1,0 +1,39 @@
+package miniJava.ContextualAnalyzer;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import miniJava.AbstractSyntaxTrees.Declaration;
+
+public class IdentificationTable {
+
+	ArrayList<HashMap<String, Declaration>> idTable = new ArrayList<HashMap<String, Declaration>>();
+	
+	public IdentificationTable() {
+		
+	}
+	
+	public void enter (String id) {
+		
+	}
+	
+	public Declaration retrieve(String id) {
+		for (int i = 0; i < idTable.size(); i++) {
+			if (idTable.get(i).containsValue(id)) {
+				HashMap<String, Declaration> tmp = idTable.get(i);
+				return tmp.get(id);
+			}
+		}
+		
+		return null;
+	}
+	
+	public void openScope() {
+		idTable.add(new HashMap<String, Declaration>());
+	}
+	
+	// pop
+	public void closeScope() {
+		idTable.remove(idTable.size() - 1);
+	}
+}

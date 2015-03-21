@@ -41,8 +41,9 @@ public class Compiler {
 	 * @param args  if no args provided parse from keyboard input
 	 *              else args[0] is name of file containing input to be parsed  
 	 */
-	public static void main(String[] args) {
 
+	public static void main(String[] args) {
+		
 		BufferedReader inputStream = null;
 		if (args.length == 0) {
 			System.exit(4);

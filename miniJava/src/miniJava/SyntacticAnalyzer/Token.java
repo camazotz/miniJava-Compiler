@@ -9,9 +9,11 @@ package miniJava.SyntacticAnalyzer;
 public class Token {
 	public TokenKind kind;
 	public String spelling;
-
-	public Token(TokenKind kind, String spelling) {
+	public SourcePosition posn;
+	
+	public Token(TokenKind kind, String spelling, SourcePosition aPosn) {
 		this.kind = kind;
 		this.spelling = spelling;
+		posn = aPosn;
 	}
 }

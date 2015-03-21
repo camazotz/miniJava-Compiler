@@ -13,4 +13,9 @@ public abstract class Reference extends AST
 		super(posn);
 	}
 
+	public <A, R> R visit(Visitor<A, R> v, A o) {
+		return null;
+	}
+	
+	public Declaration decl;
 }

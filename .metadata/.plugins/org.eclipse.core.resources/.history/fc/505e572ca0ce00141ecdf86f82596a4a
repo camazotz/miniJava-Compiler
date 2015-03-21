@@ -1,0 +1,21 @@
+package miniJava.ContextualAnalyzer;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import miniJava.AbstractSyntaxTrees.Declaration;
+
+public class IdentificationTable {
+
+	ArrayList<HashMap<String, Declaration>> idTable = new ArrayList<HashMap<String, Declaration>>();
+	
+	public IdentificationTable() {
+		
+	}
+	
+	public void enter (String id) {
+		
+	}
+	
+	
+}

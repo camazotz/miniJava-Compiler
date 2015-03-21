@@ -44,6 +44,7 @@ public interface Visitor<ArgType,ResultType> {
     public ResultType visitNewArrayExpr(NewArrayExpr expr, ArgType arg);
     
   // References
+    public ResultType visitRef(Reference ref, ArgType arg);
     public ResultType visitQualifiedRef(QualifiedRef ref, ArgType arg);
     public ResultType visitIndexedRef(IndexedRef ref, ArgType arg);
     public ResultType visitIdRef(IdRef ref, ArgType arg);

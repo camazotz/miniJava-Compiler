@@ -16,19 +16,19 @@ package miniJava.SyntacticAnalyzer;
 
 public class SourcePosition {
 
-  public int start, finish;
+  public int line, column;
 
   public SourcePosition () {
-    start = 0;
-    finish = 0;
+    line = 0;
+    column = 0;
   }
 
   public SourcePosition (int s, int f) {
-    start = s;
-    finish = f;
+    line = s;
+    column = f;
   }
 
   public String toString() {
-    return "(" + start + ", " + finish + ")";
+    return "(" + line + ", " + column + ")";
   }
 }

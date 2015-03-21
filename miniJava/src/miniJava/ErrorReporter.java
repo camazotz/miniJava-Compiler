@@ -10,7 +10,7 @@ public class ErrorReporter {
 
 		private int numErrors;
 
-		ErrorReporter() {
+		public ErrorReporter() {
 			numErrors = 0;
 		}
 

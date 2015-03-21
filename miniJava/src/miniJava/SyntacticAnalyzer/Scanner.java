@@ -12,14 +12,20 @@ public class Scanner{
 	private char currentChar;
 	private StringBuilder currentSpelling;
 
+	int line = 1, column = 1;	// Source position
+	
 	public Scanner(BufferedReader inputStream, ErrorReporter reporter) {
 		this.inputStream = inputStream;
 		this.reporter = reporter;
-
+		
 		// initialize scanner state
 		readChar();
 	}
-
+	
+	public Scanner(String line, ErrorReporter reporter) throws FileNotFoundException {
+		this.inputStream = new BufferedReader(new FileReader(line));
+		this.reporter = reporter;
+	}
 	/**
 	 * skip whitespace and tabs and scan next token
 	 * @return token
@@ -37,15 +43,18 @@ public class Scanner{
 		while (kind == null || kind == TokenKind.NULL) 
 			kind = scanToken();
 
+		SourcePosition posn = new SourcePosition(line, column);
 		// return new token
-		return new Token(kind, currentSpelling.toString());
+		return new Token(kind, currentSpelling.toString(), posn);
 	}
 	
 	public Token scanForWhitespace() {
 		currentSpelling = new StringBuilder();
 		currentSpelling.append(currentChar);
-		if (currentChar == ' ' || currentChar == '\t')
-			return new Token(TokenKind.WHITESPACE, currentSpelling.toString());
+		if (currentChar == ' ' || currentChar == '\t') {
+			SourcePosition posn = new SourcePosition(line, column);
+			return new Token(TokenKind.WHITESPACE, currentSpelling.toString(), posn);
+		}
 		else
 			return scan();
 	}
@@ -59,6 +68,10 @@ public class Scanner{
 		
 		else if (currentChar == '\n' || currentChar == '\r' ||
 				currentChar == '\t' || currentChar == ' ') {
+			if (currentChar == '\n' || currentChar == '\r') {
+				line++;
+				column = 1;
+			}
 			nextChar();
 			return(TokenKind.NULL);
 		}
@@ -337,9 +350,10 @@ public class Scanner{
 			
 			if (c == -1)
 				currentChar = '\u0003';
-			else 
+			else {
 				currentChar = (char) c;
-			
+				column++;
+			}
 		} catch (IOException e) {
 			scanError("I/O Exception!");
 			currentChar = '\u0003';
@@ -371,6 +385,8 @@ public class Scanner{
 		if (currentChar == '\n' || currentChar == '\r') {
 			skipIt();
 			currentSpelling = new StringBuilder();
+			line += 1;
+			column = 1;
 			return;
 		}
 	}

@@ -5,6 +5,7 @@
  */
 package miniJava.AbstractSyntaxTrees;
 
+import miniJava.ContextualAnalyzer.IdentificationTable;
 import miniJava.SyntacticAnalyzer.SourcePosition;
 
 public abstract class Declaration extends AST {
@@ -15,6 +16,7 @@ public abstract class Declaration extends AST {
 		this.type = type;
 	}
 	
+	public IdentificationTable idTable;
 	public String name;
 	public Type type;
 }

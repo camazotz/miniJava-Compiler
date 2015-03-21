@@ -18,4 +18,5 @@ public class Identifier extends Terminal {
       return v.visitIdentifier(this, o);
   }
 
+  public Declaration decl;
 }
