@@ -1,0 +1,764 @@
+package miniJava.SyntacticAnalyzer;
+import java.io.IOException;
+
+import miniJava.ErrorReporter;
+import miniJava.AbstractSyntaxTrees.*;
+import miniJava.AbstractSyntaxTrees.Package;
+
+/**
+ * miniJava Grammar
+ * 
+ * Program ::= (ClassDeclaration)* eot
+ *
+ * ClassDeclaration ::= class id  {(FieldDeclaration | MethodDeclaration)*}
+ *
+ * FieldDeclaration ::= Declarators id;
+ *
+ * MethodDeclaration ::= Declarators id (ParameterList?) {Statement* (return Expression;)?}
+ *
+ * Declarators ::= (public | private)? static? (Type | void)
+ *
+ * Type ::= PrimType | id | ArrType
+ *
+ * PrimType ::= int | boolean
+ * 
+ * ArrType ::= (int | id)[]
+ *
+ * ParameterList ::= Type id (, Type id)*
+ *
+ * ArgumentList ::= Expression (, Expression)*
+ *
+ * Reference ::= Reference.id | (this | id)
+ *
+ * IxReference ::= Reference ([Expression])?
+ *
+ * Statement ::=
+ *	  {Statement*}
+ *	  | Type id = Expression;
+ *	  | IxReference = Expression;
+ *	  | IxReference ( ArgumentList? );
+ *	  | if (Expression) Statement (else Statement)?
+ *	  | while (Expression) Statement
+ *
+ * Expression ::=
+ * 		IxReference
+ *	  | Reference (ArgumentList?)
+ *	  | unop Expression
+ *	  | Expression binop Expression
+ *	  | ( Expression )
+ *	  | num | true | false
+ *	  | new (id() | int [Expression] | id [Expression])
+ *
+ *
+*/
+	
+
+	public class Parser {
+
+		private Scanner scanner;
+		private ErrorReporter reporter;
+		private Token token;
+		private boolean trace = false;
+
+		public Parser(Scanner scanner, ErrorReporter reporter) {
+			this.scanner = scanner;
+			this.reporter = reporter;
+		}
+
+
+		/**
+		 * SyntaxError is used to unwind parse stack when parse fails
+		 *
+		 */
+		class SyntaxError extends Error {
+			private static final long serialVersionUID = 1L;	
+		}
+
+		/**
+		 * start parse
+		 * 
+		 */
+		public void parse() {
+			token = scanner.scan();
+			System.out.println(token.kind);
+			try {
+				parseProgram();
+			}
+			catch (SyntaxError e) { }
+		}
+		
+		/**
+		 *
+		 * Package parsing begins
+		 *
+		 */
+		private Package parseProgram() throws SyntaxError {
+			ClassDeclList clListAst = parseClassDecList();
+			Package programAst = new Package(clListAst, new SourcePosition());
+			accept(TokenKind.EOT);
+			
+			ASTDisplay disp = new ASTDisplay();
+			disp.showTree(programAst);
+			
+			return programAst;
+		}
+		
+		/**
+		 * 
+		 * Declarations
+		 * 
+		 */
+		private ClassDeclList parseClassDecList() throws SyntaxError {
+			ClassDeclList clListAst = new ClassDeclList();
+			while (token.kind == TokenKind.CLASS_KW) {
+					ClassDecl clAst = parseClassDec();
+					clListAst.add(clAst);
+			}
+			return clListAst;
+		}
+		
+		public ClassDecl parseClassDec() throws SyntaxError {
+			FieldDeclList flAst = new FieldDeclList();
+			MethodDeclList mlAst = new MethodDeclList();
+			
+			Token tokenForSP = token;
+			accept(TokenKind.CLASS_KW);
+			String className = token.spelling;
+			accept(TokenKind.ID);
+			accept(TokenKind.LBRACE);
+			
+			while (token.kind != TokenKind.RBRACE) {
+					MemberDecl mdAst = parseMemberDecl();
+					
+					// Field Declaration - object mdAst represents it
+					if (token.kind == TokenKind.SEMICOLON) {
+						accept(TokenKind.SEMICOLON);
+						flAst.add((FieldDecl)mdAst);
+					}
+					
+					// Method Declaration
+					else {
+						mdAst = parseMethodDecl((FieldDecl)mdAst);
+						mlAst.add((MethodDecl)mdAst);
+					}
+			}
+			
+			ClassDecl clAst = new ClassDecl(className, flAst, mlAst, tokenForSP.posn);
+			accept(TokenKind.RBRACE);
+			return clAst;
+		}
+		
+		private MethodDecl parseMethodDecl(FieldDecl fd) {
+			ParameterDeclList pdlAst = new ParameterDeclList();
+			StatementList stlAst = new StatementList();
+			Expression returnExp = null;
+			
+			// Parameter Declaration List
+			accept(TokenKind.LPAREN);
+			
+			if (token.kind != TokenKind.RPAREN) 
+				pdlAst = parseParameterList();
+			
+			accept(TokenKind.RPAREN);
+			
+			// Method Declarations
+			accept(TokenKind.LBRACE);
+			while (token.kind != TokenKind.RBRACE) {
+				if (token.kind == TokenKind.RETURN_KW) {
+					accept(TokenKind.RETURN_KW);
+					returnExp = parseExpression();
+					accept(TokenKind.SEMICOLON);
+					break;
+				}
+				
+				stlAst.add(parseStatement());
+			}
+			
+			accept(TokenKind.RBRACE);
+			
+			return new MethodDecl(fd, pdlAst, stlAst, returnExp, fd.posn);
+		}
+		
+		private ParameterDeclList parseParameterList() {
+			ParameterDeclList pdlAst = new ParameterDeclList();
+			Type bt = parseType();
+			
+			Token name = token;
+			accept(TokenKind.ID);
+			pdlAst.add(new ParameterDecl(bt, name.spelling, name.posn));
+			
+			while (token.kind == TokenKind.COMMA) {
+					accept(TokenKind.COMMA);
+					Type bt2 = parseType();
+					
+					Token name2 = token;
+					accept(TokenKind.ID);
+					
+					pdlAst.add(new ParameterDecl(bt2, name2.spelling, name2.posn));
+			}
+			
+			return pdlAst;
+		}
+		
+		private MemberDecl parseMemberDecl() {
+			boolean isPrivate = false, isStatic = false;	
+			Type memType = null;
+			
+			if (token.kind == TokenKind.PUBLIC_KW) {
+				// isPrivate = false;
+				accept(TokenKind.PUBLIC_KW);
+			}
+			
+			else if (token.kind == TokenKind.PRIVATE_KW) {
+				isPrivate = true;
+				accept(TokenKind.PRIVATE_KW);
+			}
+			
+			if (token.kind == TokenKind.STATIC_KW) {
+				isStatic = true;
+				accept(TokenKind.STATIC_KW);
+			}
+			
+			if (token.kind == TokenKind.VOID_KW) {
+				memType = new BaseType(TypeKind.VOID, token.posn);
+				accept(TokenKind.VOID_KW);
+			}
+			
+			else
+				memType = parseType();
+			
+			Token name = token;
+			String aname = token.spelling;
+			accept(TokenKind.ID);
+
+			return new FieldDecl(isPrivate, isStatic, memType, name.spelling, name.posn);
+		}
+		
+		/**
+		 * 
+		 * Statements
+		 *
+		 */
+		private Statement parseBlockStmt() {
+			StatementList stlAst = new StatementList();
+			accept(TokenKind.LBRACE);	
+			Token tokenPos = token;
+			while (token.kind != TokenKind.RBRACE) {
+				stlAst.add(parseStatement());
+			}
+			
+			accept(TokenKind.RBRACE);
+			
+			return new BlockStmt(stlAst, tokenPos.posn);
+		}
+		
+		private Statement parseStatement() {
+			Statement stAst = null;
+			
+			if (token.kind == TokenKind.LBRACE) {
+				return parseBlockStmt();
+			}
+			
+			else if (token.kind == TokenKind.IF_KW) {
+				stAst = parseIfStmt();
+			}
+			
+			else if (token.kind == TokenKind.WHILE_KW) {
+				stAst = parseWhileStmt();
+			}
+			
+			else if (token.kind == TokenKind.BOOLEAN_KW || token.kind == TokenKind.INT_KW) {
+				stAst = parseVarDeclStmt();
+			}
+			
+			else if (token.kind == TokenKind.ID || token.kind == TokenKind.THIS_KW) {
+				Token t1 = token, t2 = null, t3 = null;
+				
+				try {
+					t2 = scanner.lookAhead(1);
+					t3 = scanner.lookAhead(2);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				if (t2.kind == TokenKind.ID || (t2.kind == TokenKind.LBRACKET
+						&& t3.kind == TokenKind.RBRACKET))
+					return parseVarDeclStmt();
+				
+				return parseReferenceStmt();
+			}
+			
+			else
+				return parseReferenceStmt();
+			
+			return stAst;
+		}
+		
+		private Statement parseReferenceStmt() {
+			Reference ref = parseReference();
+			Token tokenPos = token;
+			if (token.kind == TokenKind.LPAREN) {
+				accept(TokenKind.LPAREN);
+				ExprList expL = new ExprList();
+				if (token.kind != TokenKind.RPAREN)
+					expL = parseArgumentList();
+				accept(TokenKind.RPAREN);
+				accept(TokenKind.SEMICOLON);
+				return new CallStmt(ref, expL, tokenPos.posn);
+			}
+			
+			// IxRef = 
+			else {
+				accept(TokenKind.EQUALS);
+				Expression refExpr = parseExpression();
+				accept(TokenKind.SEMICOLON);
+				return new AssignStmt(ref, refExpr, tokenPos.posn);
+			}
+		}
+		
+		private VarDeclStmt parseVarDeclStmt() {
+			Expression eAst = null;
+			Type someType = null;
+			String typeName = null;
+			Token tokenPos = token;
+			if (token.kind == TokenKind.BOOLEAN_KW) {
+				accept(TokenKind.BOOLEAN_KW);
+				someType = new BaseType(TypeKind.BOOLEAN, tokenPos.posn);
+				
+				typeName = token.spelling;
+				accept(TokenKind.ID);
+				accept(TokenKind.EQUALS);			
+				eAst = parseExpression();
+				accept(TokenKind.SEMICOLON);
+			}
+			
+			else {
+				if (token.kind == TokenKind.INT_KW) {
+					accept(TokenKind.INT_KW);
+					someType = new BaseType(TypeKind.INT, tokenPos.posn);
+				}
+				
+				else {
+					Token aToken = token;
+					accept(TokenKind.ID);
+					Identifier classId = new Identifier(aToken, aToken.posn);
+					someType = new ClassType(classId, tokenPos.posn);		
+				}
+				
+				if (token.kind == TokenKind.LBRACKET) {
+					accept(TokenKind.LBRACKET);
+					accept(TokenKind.RBRACKET);
+					someType = new ArrayType(someType, tokenPos.posn);
+				}
+				
+				typeName = token.spelling;
+				accept(TokenKind.ID);
+				accept(TokenKind.EQUALS);
+				eAst = parseExpression();
+				accept(TokenKind.SEMICOLON);
+			}
+			
+			VarDecl vd = new VarDecl(someType, typeName, tokenPos.posn);
+			return new VarDeclStmt(vd, eAst, vd.posn);
+		}
+		
+		private WhileStmt parseWhileStmt() {
+			WhileStmt whileAst = null;
+			Token tokenPos = token;
+			accept(TokenKind.WHILE_KW);
+			Statement stAst = null;
+			
+			accept(TokenKind.LPAREN);
+			Expression eAst = parseExpression();
+			accept(TokenKind.RPAREN);
+			stAst = parseStatement();
+			
+			whileAst = new WhileStmt(eAst, stAst, tokenPos.posn);
+			return whileAst;
+		}
+		
+		private IfStmt parseIfStmt() {
+			IfStmt ifAst = null;
+			Token tokenPos = token;
+			accept(TokenKind.IF_KW);
+			Statement stAst1 = null;
+			Statement stAst2 = null;
+			
+			accept(TokenKind.LPAREN);
+			Expression eAst = parseExpression();
+			accept(TokenKind.RPAREN);
+			stAst1 = parseStatement();
+			
+			if (token.kind == TokenKind.ELSE_KW) {
+				accept(TokenKind.ELSE_KW);
+				stAst2 = parseStatement();
+				return new IfStmt(eAst, stAst1, stAst2, tokenPos.posn);
+			}
+			
+			return new IfStmt(eAst, stAst1, tokenPos.posn);
+		}
+		
+		/**
+		 * 
+		 * References
+		 *
+		 */
+		private Reference parseReference() {
+			Reference ref = parseBasicReference();
+			Token tokenPos = token;
+			while (token.kind == TokenKind.PERIOD) {
+				accept(TokenKind.PERIOD);
+				Token aToken = token;
+				Identifier anId = new Identifier(aToken, aToken.posn);
+				accept(TokenKind.ID);
+				ref = new QualifiedRef(ref, anId, tokenPos.posn);
+			}
+			
+			if (token.kind == TokenKind.LBRACKET) {
+				accept(TokenKind.LBRACKET);
+				Expression someExp = parseExpression();
+				accept(TokenKind.RBRACKET);
+				return new IndexedRef(ref, someExp, tokenPos.posn);
+			}
+			
+			return ref;
+		}
+		
+		private Reference parseBasicReference() {
+			if (token.kind == TokenKind.THIS_KW) {
+				Token tokenPos = token;
+				accept(TokenKind.THIS_KW);
+				return new ThisRef(tokenPos.posn);
+			}
+
+			Token refToken = token;
+			Identifier refId = new Identifier(refToken, refToken.posn);
+			accept(TokenKind.ID);
+			IdRef baseRef = new IdRef(refId, refId.posn);
+			
+			return baseRef;
+		}
+
+		/**
+		 * 
+		 * Arguments
+		 *
+		 */
+		private ExprList parseArgumentList()
+		{
+			ExprList expListAst = new ExprList();
+			Expression eAst = parseExpression();
+			expListAst.add(eAst);
+			
+			while (token.kind == TokenKind.COMMA) {
+					accept(TokenKind.COMMA);
+					eAst = parseExpression();
+					expListAst.add(eAst);
+			}
+			
+			return expListAst;
+		}
+		
+		/**
+		 * 
+		 * Expressions
+		 *
+		 */
+		private Expression justExpression() {
+			if (token.kind == TokenKind.NEW_KW) {
+				return parseNewExpr();
+			}
+			
+			else if (token.kind == TokenKind.NUM) {
+				return parseNum();
+			}
+			
+			else if (token.kind == TokenKind.TRUE_KW) {
+				return parseTrueKW();
+			}
+			
+			else if (token.kind == TokenKind.FALSE_KW) {
+				return parseFalseKW();
+			}
+			
+			else if (token.kind == TokenKind.LPAREN) {
+				accept(TokenKind.LPAREN);
+				Expression eAst = parseExpression();
+				accept(TokenKind.RPAREN);
+				return eAst;
+			}
+			
+			else if (token.kind == TokenKind.SUBTRACT ||
+					token.kind == TokenKind.UNOP) {
+				Token aToken = token;
+				Operator op = new Operator(aToken, aToken.posn);
+				parseUnop();
+				Expression expr = justExpression();
+				return new UnaryExpr(op, expr, op.posn);
+			}
+			
+			else { //if (token.kind == TokenKind.THIS_KW || token.kind == TokenKind.ID)
+				Reference refAst = parseReference();
+				
+				// Reference (ArgList?)
+				if (token.kind == TokenKind.LPAREN) {
+					accept(TokenKind.LPAREN);
+					ExprList expListAst = null;
+					// ( ArgumentList )?
+					if (token.kind != TokenKind.RPAREN) {
+						expListAst = parseArgumentList();
+					}
+					
+					else
+						expListAst = new ExprList();
+					accept(TokenKind.RPAREN);
+					return new CallExpr(refAst, expListAst, refAst.posn);
+				}
+				
+				else {
+					return new RefExpr(refAst, refAst.posn);
+				}
+
+			}
+		}
+		
+		private Expression parseNewExpr() {
+			accept(TokenKind.NEW_KW);	
+			Token tokenPos = token;
+			if (token.kind == TokenKind.INT_KW) {
+				Type bt = new BaseType(TypeKind.INT, tokenPos.posn);
+				accept(TokenKind.INT_KW);
+				accept(TokenKind.LBRACKET);
+				
+				Expression eAst2 = parseExpression();
+				accept(TokenKind.RBRACKET);
+				return new NewArrayExpr(bt, eAst2, bt.posn);
+			}
+			
+			else {
+				Token classIdentifier = token;
+				accept(TokenKind.ID);
+				
+				if (token.kind == TokenKind.LPAREN)	{ // Object
+					Identifier cid = new Identifier(classIdentifier, classIdentifier.posn);
+					ClassType ct = new ClassType(cid, cid.posn);
+					accept(TokenKind.LPAREN);
+					accept(TokenKind.RPAREN);
+					
+					return new NewObjectExpr(ct, ct.posn);
+				}
+				
+				else { // Array
+					Identifier classId = new Identifier(classIdentifier, classIdentifier.posn);
+					Type someType = new ClassType(classId, classId.posn);	
+					
+					accept(TokenKind.LBRACKET);
+					Expression eAst2 = parseExpression();
+					accept(TokenKind.RBRACKET);
+					
+					return new NewArrayExpr(someType, eAst2, someType.posn);
+				}
+			}
+		}
+		
+		private Expression parseExpression() {
+			Expression eAst = parseDisjunctive();
+			return eAst;
+		}
+		
+		private Expression parseDisjunctive() {
+			Expression eAst = parseConjunctive();
+			
+			while (token.spelling.equals("||")) {
+				Operator expOp = new Operator(token, token.posn);
+				parseBinop();
+				eAst = new BinaryExpr(expOp, eAst, parseConjunctive(), expOp.posn);
+			}
+			
+			return eAst;
+		}
+		
+		private Expression parseConjunctive() {
+			Expression eAst = parseEquality();
+			
+			while (token.spelling.equals("&&")) {
+				Operator expOp = new Operator(token, token.posn);
+				parseBinop();			
+				eAst = new BinaryExpr(expOp, eAst, parseEquality(), expOp.posn);
+			}
+			
+			return eAst;
+		}
+		
+		private Expression parseEquality() {
+			Expression eAst = parseRelational();
+			
+			while (token.spelling.equals("==") || token.spelling.equals("!=")) {
+				Operator expOp = new Operator(token, token.posn);
+				parseBinop();			
+				eAst = new BinaryExpr(expOp, eAst, parseRelational(), expOp.posn);
+			}
+			
+			return eAst;
+		}
+		
+		private Expression parseRelational() {
+			Expression eAst = parseAdditive();
+			
+			while (token.spelling.equals(">") || token.spelling.equals("<") ||
+					token.spelling.equals(">=") || token.spelling.equals("<=")) {
+				Operator expOp = new Operator(token, token.posn);
+				parseBinop();			
+				eAst = new BinaryExpr(expOp, eAst, parseAdditive(), expOp.posn);
+			}
+			
+			return eAst;
+		}
+		
+		private Expression parseAdditive() {
+			Expression eAst = parseMultiplicative();
+			
+			while (token.spelling.equals("+") || token.spelling.equals("-")) {
+				Operator expOp = new Operator(token, token.posn);
+				parseBinop();			
+				eAst = new BinaryExpr(expOp, eAst, parseMultiplicative(), expOp.posn);
+			}
+			
+			return eAst;
+		}
+		
+		private Expression parseMultiplicative() {
+			Expression eAst = justExpression();
+			
+			while (token.spelling.equals("*") || token.spelling.equals("/")) {
+				Operator expOp = new Operator(token, token.posn);
+				parseBinop();
+				eAst = new BinaryExpr(expOp, eAst, justExpression(), expOp.posn);
+			}
+			
+			return eAst;
+		}
+		
+		/**
+		 * 
+		 * Types
+		 *
+		 */
+		private Type parseType() {
+			Token tokenPos = token;
+			if (token.kind == TokenKind.BOOLEAN_KW) {
+				accept(TokenKind.BOOLEAN_KW);
+				return new BaseType(TypeKind.BOOLEAN, tokenPos.posn);
+			}
+			
+			else if (token.kind == TokenKind.INT_KW) {
+				accept(TokenKind.INT_KW);
+				Type typeReturned = new BaseType(TypeKind.INT, tokenPos.posn);
+				if (token.kind == TokenKind.LBRACKET) {
+					accept(TokenKind.LBRACKET);
+					accept(TokenKind.RBRACKET);
+					typeReturned = new ArrayType(typeReturned, typeReturned.posn);
+				}
+				return typeReturned;
+			}
+			
+			else {
+				Identifier id = new Identifier(token, token.posn);
+				accept(TokenKind.ID);
+				Type typeReturned = new ClassType(id, id.posn);
+				if (token.kind == TokenKind.LBRACKET) {
+					accept(TokenKind.LBRACKET);
+					accept(TokenKind.RBRACKET);
+					typeReturned = new ArrayType(typeReturned, typeReturned.posn);
+				}
+				return typeReturned;
+			}
+		}
+		
+		/**
+		 * 
+		 * Terminals
+		 *
+		 */
+		private void parseBinop() {
+			if (token.kind == TokenKind.SUBTRACT)
+				accept(TokenKind.SUBTRACT);
+			else
+				accept(TokenKind.BINOP);
+		}
+		
+		private void parseUnop() {
+			if (token.kind == TokenKind.SUBTRACT)
+				accept(TokenKind.SUBTRACT);
+			else
+				accept(TokenKind.UNOP);
+		}
+		
+		private LiteralExpr parseNum() {
+			IntLiteral ilexp = new IntLiteral(token, token.posn);
+			accept(TokenKind.NUM);
+			return new LiteralExpr(ilexp, ilexp.posn);
+		}
+		
+		private LiteralExpr parseTrueKW() {
+			BooleanLiteral blexp = new BooleanLiteral(token, token.posn);
+			accept(TokenKind.TRUE_KW);
+			return new LiteralExpr(blexp, blexp.posn);
+		}
+		
+		private LiteralExpr parseFalseKW() {
+			BooleanLiteral blexp = new BooleanLiteral(token, token.posn);
+			accept(TokenKind.FALSE_KW);
+			return new LiteralExpr(blexp, blexp.posn);
+		}
+		
+		/**
+		 * 
+		 * Interfacing with the Scanner
+		 *
+		 */
+		private void acceptIt() throws SyntaxError {
+			accept(token.kind);
+		}
+
+		/**
+		 * verify that current token in input matches expected token and advance to next token
+		 * @param expectedToken
+		 * @throws SyntaxError  if match fails
+		 */
+		private void accept(TokenKind expectedTokenKind) throws SyntaxError {
+			if (token.kind == expectedTokenKind) {
+				if (trace)
+					pTrace();
+				
+				token = scanner.scan();
+				System.out.println(token.kind);			
+			}
+			
+			else
+				parseError("expecting '" + expectedTokenKind +
+						"' but found '" + token.kind + "'");
+		}
+
+		/**
+		 * report parse error and unwind call stack to start of parse
+		 * @param e  string with error detail
+		 * @throws SyntaxError
+		 */
+		private void parseError(String e) throws SyntaxError {
+			reporter.reportError("Parse error: " + e);
+			throw new SyntaxError();
+		}
+
+		// show parse stack whenever terminal is  accepted
+		private void pTrace() {
+			StackTraceElement [] stl = Thread.currentThread().getStackTrace();
+			for (int i = stl.length - 1; i > 0 ; i--) {
+				if(stl[i].toString().contains("parse"))
+					System.out.println(stl[i]);
+			}
+			System.out.println("accepting: " + token.kind + " (\"" + token.spelling + "\")");
+			System.out.println();
+		}
+}

@@ -11,7 +11,7 @@ public class Scanner{
 
 	private char currentChar;
 	private StringBuilder currentSpelling;
-
+	private boolean makeException = false;
 	int line = 1, column = 1;	// Source position
 	
 	public Scanner(BufferedReader inputStream, ErrorReporter reporter) {
@@ -22,9 +22,11 @@ public class Scanner{
 		readChar();
 	}
 	
-	public Scanner(String line, ErrorReporter reporter) throws FileNotFoundException {
-		this.inputStream = new BufferedReader(new FileReader(line));
+	public Scanner(String line, ErrorReporter reporter, boolean exception) throws IOException {
+		this.inputStream = new BufferedReader(new StringReader(line));
 		this.reporter = reporter;
+		makeException = exception;
+		readChar();
 	}
 	/**
 	 * skip whitespace and tabs and scan next token
@@ -232,7 +234,8 @@ public class Scanner{
 			return(TokenKind.NUM);
 		}
 		
-		else if (Character.toString(currentChar).matches("^[a-zA-Z]")) {
+		else if (Character.toString(currentChar).matches("^[a-zA-Z]") ||
+				(makeException == true && Character.toString(currentChar).matches("^[a-zA-Z0-9_]"))) {
 			while (Character.toString(currentChar).matches("^[a-zA-Z0-9_]")) {
 				takeIt();
 			}

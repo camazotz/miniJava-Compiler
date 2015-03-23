@@ -18,4 +18,5 @@ public abstract class Reference extends AST
 	}
 	
 	public Declaration decl;
+	public String spelling;
 }

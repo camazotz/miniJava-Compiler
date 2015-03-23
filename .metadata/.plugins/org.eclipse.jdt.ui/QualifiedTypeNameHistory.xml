@@ -7,9 +7,13 @@
 <fullyQualifiedTypeName name="miniJava.SyntacticAnalyzer.Parser"/>
 <fullyQualifiedTypeName name="miniJava.SyntacticAnalyzer.Scanner"/>
 <fullyQualifiedTypeName name="miniJava.SyntacticAnalyzer.ErrorReporter"/>
-<fullyQualifiedTypeName name="miniJava.ErrorReporter"/>
 <fullyQualifiedTypeName name="miniJava.SyntacticAnalyzer.TokenKind"/>
-<fullyQualifiedTypeName name="java.util.ArrayList"/>
 <fullyQualifiedTypeName name="java.util.HashMap"/>
+<fullyQualifiedTypeName name="miniJava.AbstractSyntaxTrees.Visitor"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="miniJava.ErrorReporter"/>
 <fullyQualifiedTypeName name="miniJava.AbstractSyntaxTrees.Declaration"/>
+<fullyQualifiedTypeName name="miniJava.ContextualAnalyzer.CAnalyzer"/>
+<fullyQualifiedTypeName name="miniJava.ContextualAnalyzer.IdentificationTable"/>
+<fullyQualifiedTypeName name="java.io.IOException"/>
 </qualifiedTypeNameHistroy>

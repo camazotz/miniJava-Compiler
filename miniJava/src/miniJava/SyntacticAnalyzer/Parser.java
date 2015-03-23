@@ -78,13 +78,15 @@ import miniJava.AbstractSyntaxTrees.Package;
 		 * start parse
 		 * 
 		 */
-		public void parse() {
+		public Package parse() {
 			token = scanner.scan();
 			System.out.println(token.kind);
+			Package finalPackage = null;
 			try {
-				parseProgram();
+				finalPackage = parseProgram();
 			}
 			catch (SyntaxError e) { }
+			return finalPackage;
 		}
 		
 		/**
@@ -97,8 +99,8 @@ import miniJava.AbstractSyntaxTrees.Package;
 			Package programAst = new Package(clListAst, new SourcePosition());
 			accept(TokenKind.EOT);
 			
-			ASTDisplay disp = new ASTDisplay();
-			disp.showTree(programAst);
+			//ASTDisplay disp = new ASTDisplay();
+			//disp.showTree(programAst);
 			
 			return programAst;
 		}
