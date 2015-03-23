@@ -78,12 +78,10 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 	@Override
 	public Type visitMethodDecl(MethodDecl md, IdentificationTable arg) {
 		presentMethodDecl = md;
-		if (isMainMethod(md)){
-			if (mainMethod != null)
-				reporter.reportError("***Main method at" + md.posn + " already exists at " + mainMethod.posn);
-			else
-				mainMethod = md;
-		}	
+		if (isMainMethod(md) && mainMethod != null) 
+			reporter.reportError("***Main method at" + md.posn + " already exists at " + mainMethod.posn);
+		else
+			mainMethod = md;
 		
 		md.type.visit(this, arg);
 		for (ParameterDecl pd : md.parameterDeclList) {
@@ -172,7 +170,7 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 		Type varDeclType = (Type)stmt.initExp.visit(this, arg);
 		presentVarDecl = null;
 		
-		if (!checkEquality(varDeclType,stmt.varDecl.type))
+		if (varDeclType != stmt.varDecl.type)
 			reporter.reportError("***Expected " + stmt.varDecl.type + " but got " + varDeclType + " at " + stmt.initExp.posn);
 		
 		return null;
@@ -183,7 +181,7 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 		Type stmtRefType = (Type)stmt.ref.visit(this, arg);
 		Type stmtValType = (Type)stmt.val.visit(this, arg);
 		
-		if (!checkEquality(stmtRefType,stmtValType))
+		if (stmtRefType != stmtValType)
 			reporter.reportError("***Expected " + stmtRefType + " but got " + stmtValType + " at " + stmt.posn);
 
 		if(stmt.ref instanceof ThisRef)
@@ -216,7 +214,7 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 			Type expType = (Type)exp.visit(this, arg);
 			ParameterDecl pd = md.parameterDeclList.get(i);
 			
-			if (!checkEquality(expType,pd.type))
+			if (expType != pd.type)
 				reporter.reportError("***Parameter " + pd.name + " is of type " + pd.type + " but got " + expType + " at " + exp.posn);
 		}
 		return null;
@@ -261,7 +259,7 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 	public Type visitUnaryExpr(UnaryExpr expr, IdentificationTable arg) {
 		Type expType = (Type)expr.expr.visit(this, arg);
 		Type opType = (Type)expr.operator.visit(this, arg);
-		if (!checkEquality(expType, opType)) {
+		if (expType.typeKind != opType.typeKind) {
 			reporter.reportError("***Expression type at " + expType.posn + " does not match Operator " +
 					expr.operator.spelling + " type which is " + opType);
 		}
@@ -271,35 +269,33 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 	@Override
 	public Type visitBinaryExpr(BinaryExpr expr, IdentificationTable arg) {
 		Type exp1 = (Type)expr.left.visit(this, arg);
+		Type opType = (Type)expr.operator.visit(this, arg);
 		Type exp2 = (Type)expr.right.visit(this, arg);
 	
-		String operator = expr.operator.spelling;
+		String operator = opType.toString();
 		if (operator.equals("==") || operator.equals("!=")) {
-			if (!checkEquality(exp1, exp2)) {
+			if (exp1 != exp2) {
 				reporter.reportError("***Left expression type " + exp1.typeKind + " at " + exp1.posn + " does not match "
 				+ "right expression type " + exp2.typeKind + " at " + exp2.posn);
 			}
-			return new BaseType(TypeKind.BOOLEAN, expr.posn);
 		}
 		
 		else if (operator.equals("&&") || operator.equals("||")){
-			BaseType tmp = new BaseType(TypeKind.BOOLEAN, expr.posn);
-			if (!checkEquality(exp1, tmp))
-				reporter.reportError("The type " + tmp + " and " + exp1 + " don't match");
-			if (!checkEquality(exp2, tmp))
-				reporter.reportError("The type " + tmp + " and " + exp2 + " don't match");
+			if (exp1.typeKind != TypeKind.BOOLEAN)
+				reporter.reportError("***Expected " + TypeKind.BOOLEAN + " but got " + exp1.typeKind + " at " + expr.posn);
+			if (exp2.typeKind != TypeKind.BOOLEAN)
+				reporter.reportError("***Expected " + TypeKind.BOOLEAN + " but got " + exp2.typeKind + " at " + expr.posn);
 		}
 		
 		else if (operator.equals(">") || operator.equals("<") || operator.equals("+")
 				|| operator.equals("-") || operator.equals("*") || operator.equals("/")
 				|| operator.equals("<=") || operator.equalsIgnoreCase(">=")) {
-			BaseType tmp = new BaseType(TypeKind.INT, expr.posn);
-			if (!checkEquality(exp1, tmp))
-				reporter.reportError("The type " + tmp + " and " + exp1 + " don't match");
-			if (!checkEquality(exp2, tmp))
-				reporter.reportError("The type " + tmp + " and " + exp2 + " don't match");
+			if (exp1.typeKind != TypeKind.INT)
+				reporter.reportError("***Expected " + TypeKind.INT + " but got " + exp1.typeKind + " at " + expr.posn);
+			if (exp2.typeKind != TypeKind.INT)
+				reporter.reportError("***Expected " + TypeKind.INT + " but got " + exp2.typeKind + " at " + expr.posn);
 		}
-		return (Type)expr.operator.visit(this, arg);
+		return null;
 	}
 
 	@Override
@@ -340,7 +336,7 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 			Expression exp = expr.argList.get(i);
 			Type expType = (Type)exp.visit(this, arg);
 			ParameterDecl pd = md.parameterDeclList.get(i);
-			if (!checkEquality(pd.type,expType)) {
+			if (pd.type != expType) {
 				reporter.reportError("***Parameter " + pd.name + " is of type " + pd.type + " but got " + expType 
 						+ " at " + exp.posn);
 			}
@@ -391,14 +387,14 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 			
 			return new BaseType(TypeKind.INT, ref.id.posn);
 		}
-		// Check if Class
+		
 		if(aType.typeKind != TypeKind.CLASS) {
 			reporter.reportError("***Qualified reference must be a class or an array at " + ref.posn);
 			return new BaseType(TypeKind.ERROR, ref.posn);
 		}
 		
 		ClassType ct = (ClassType) aType;
-		ClassDecl cd = (ClassDecl) aTable.retrieveInScope(ct.className.spelling);
+		ClassDecl cd = (ClassDecl) arg.retrieveInScope(ct.className.spelling);
 		if(cd == null) {
 			reporter.reportError("***ClassDecl is null at " + ct.posn);
 			return new BaseType(TypeKind.ERROR, ref.posn);
@@ -480,9 +476,9 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 
 	@Override
 	public Object visitIdentifier(Identifier id, IdentificationTable arg) {
-		if(presentVarDecl != null && presentVarDecl.name.equals(id.spelling)) {
-			reporter.reportError("Cannot use variable in its declaration at " + id.posn);
-		}
+//		if(presentVarDecl != null && presentVarDecl.name.equals(id.spelling)) {
+//			reporter.reportError("Cannot use variable in its declaration at " + id.posn);
+//		}
 		
 		Declaration tmp = arg.retrieveAnyScope(id.spelling);
 		if (tmp != null) {
@@ -496,25 +492,21 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 			System.exit(4);
 		}
 		
-		if(id.decl instanceof MemberDecl) {
-			MemberDecl md = (MemberDecl) id.decl;
-			if(presentMethodDecl.isStatic && !md.isStatic) {
-				reporter.reportError("Cannot access non-static MethodDecl " + md.name + " from a static method at " + id.posn);
-			}
-		}
+//		if(id.decl instanceof MemberDecl) {
+//			MemberDecl md = (MemberDecl) id.decl;
+//			if(presentMethodDecl.isStatic && !md.isStatic) {
+//				reporter.reportError("Cannot access instance member " + md.name + " in a static context at " + id.posn);
+//			}
+//		}
 		return id.decl.type;
 	}
 
 	@Override
 	public Object visitOperator(Operator op, IdentificationTable arg) {
-	    if (op.spelling.equals("!=") || op.spelling.equals("==") || op.spelling.equals(">=")
-	    	|| op.spelling.equals("<=") || op.spelling.equals("<") || op.spelling.equals(">")
-	    	|| op.spelling.equals("||") || op.spelling.equals("&&") || op.spelling.equals("!")){
-	    	return new BaseType(TypeKind.BOOLEAN, op.posn);
-	    }
-	    else if (op.spelling.equals("+") || op.spelling.equals("-") || op.spelling.equals("*")
-	    		|| op.spelling.equals("/")){
-	    	return new BaseType(TypeKind.INT, op.posn);
+		Declaration binding = arg.retrieveInScope(op.spelling);
+	    if (binding != null){
+	      op.decl = binding;
+	      return new BaseType(binding.type.typeKind, op.posn);
 	    }
 	    return new BaseType(TypeKind.ERROR, op.posn);
 	}
@@ -534,26 +526,7 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
-	public boolean checkEquality(Type a, Type b) {
-		if (a.typeKind != b.typeKind)
-			return false;
-		
-		else if (a.typeKind == TypeKind.CLASS){
-			ClassType ct = (ClassType)a, ct2 = (ClassType)b;
-			if (ct.className.spelling.equals(ct2.className.spelling))
-				return true;
-			else
-				return false;
-		}
-		
-		else if (a.typeKind == TypeKind.ARRAY){
-			ArrayType at = (ArrayType)a, at2 = (ArrayType)b;
-			return checkEquality(at.eltType, at2.eltType);
-		}
-		
-		return true;
-	}
+
 	public boolean isMainMethod(MethodDecl newFd) {
 		if (!newFd.isPrivate && newFd.isStatic && newFd.type.typeKind == TypeKind.VOID
 				&& newFd.name.equals("main")) {
@@ -568,6 +541,8 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 					}
 				}
 			}
+			aTable.enter(newFd.name, newFd);
+			return true;
 		}
 		return false;
 	}

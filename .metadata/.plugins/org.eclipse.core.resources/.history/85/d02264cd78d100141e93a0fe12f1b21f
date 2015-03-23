@@ -78,12 +78,10 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 	@Override
 	public Type visitMethodDecl(MethodDecl md, IdentificationTable arg) {
 		presentMethodDecl = md;
-		if (isMainMethod(md)){
-			if (mainMethod != null)
-				reporter.reportError("***Main method at" + md.posn + " already exists at " + mainMethod.posn);
-			else
-				mainMethod = md;
-		}	
+		if (isMainMethod(md) && mainMethod != null) 
+			reporter.reportError("***Main method at" + md.posn + " already exists at " + mainMethod.posn);
+		else
+			mainMethod = md;
 		
 		md.type.visit(this, arg);
 		for (ParameterDecl pd : md.parameterDeclList) {
@@ -391,14 +389,14 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 			
 			return new BaseType(TypeKind.INT, ref.id.posn);
 		}
-		// Check if Class
+		
 		if(aType.typeKind != TypeKind.CLASS) {
 			reporter.reportError("***Qualified reference must be a class or an array at " + ref.posn);
 			return new BaseType(TypeKind.ERROR, ref.posn);
 		}
 		
 		ClassType ct = (ClassType) aType;
-		ClassDecl cd = (ClassDecl) aTable.retrieveInScope(ct.className.spelling);
+		ClassDecl cd = (ClassDecl) arg.retrieveInScope(ct.className.spelling);
 		if(cd == null) {
 			reporter.reportError("***ClassDecl is null at " + ct.posn);
 			return new BaseType(TypeKind.ERROR, ref.posn);

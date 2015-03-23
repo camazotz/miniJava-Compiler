@@ -1,3 +1,17 @@
+// pass
+class Node {
+	Node next;
+	int data;
+
+	public void setNext(Node x) {
+		next = x;
+	}
+
+	public void setData(int x) {
+		data = x;
+	}
+}
+
 class Compiler {
 
 
@@ -6,6 +20,7 @@ class Compiler {
 	 *              else args[0] is name of file containing input to be parsed  
 	 */
 	public static void main(String[] args) {
-		System.out.println(3);
+		Node x = new Node();
+		x.setData(4);
 	}
 }

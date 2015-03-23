@@ -398,7 +398,7 @@ public class CAnalyzer implements Visitor<IdentificationTable, Object>{
 		}
 		
 		ClassType ct = (ClassType) aType;
-		ClassDecl cd = (ClassDecl) aTable.retrieveInScope(ct.className.spelling);
+		ClassDecl cd = (ClassDecl) arg.retrieveInScope(ct.className.spelling);
 		if(cd == null) {
 			reporter.reportError("***ClassDecl is null at " + ct.posn);
 			return new BaseType(TypeKind.ERROR, ref.posn);
